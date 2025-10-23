@@ -1,0 +1,173 @@
+{
+  "components": [
+    {
+      "label": "Claim Summary",
+      "components": [
+        {
+          "label": "Claim File Number",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_06xm51q",
+            "columns": null
+          },
+          "id": "Field_1hi0ow4",
+          "key": "claim_file_number",
+          "disabled": false,
+          "readonly": true
+        },
+        {
+          "label": "Policy Number",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_06xm51q",
+            "columns": null
+          },
+          "id": "Field_1uwya4z",
+          "key": "policy_number",
+          "disabled": false,
+          "readonly": true
+        },
+        {
+          "label": "Policyholder - Firstname",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_0xqcbuv",
+            "columns": null
+          },
+          "id": "Field_151zn1o",
+          "key": "customer_firstname",
+          "disabled": false,
+          "readonly": "=true"
+        },
+        {
+          "label": "Policyholder - Lastname",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_0xqcbuv",
+            "columns": null
+          },
+          "id": "Field_04pnv8x",
+          "key": "customer_lastname",
+          "readonly": true,
+          "properties": {}
+        },
+        {
+          "label": "Type of Claim",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_0kec1f9",
+            "columns": null
+          },
+          "id": "Field_1wqwqi3",
+          "key": "claim_type",
+          "readonly": true
+        },
+        {
+          "label": "Max Approved Amount",
+          "type": "number",
+          "layout": {
+            "row": "Row_00kcoo2",
+            "columns": null
+          },
+          "id": "Field_114qaum",
+          "key": "approved_amount",
+          "decimalDigits": 2,
+          "increment": "0.01",
+          "readonly": true,
+          "properties": {}
+        }
+      ],
+      "showOutline": true,
+      "type": "group",
+      "layout": {
+        "row": "Row_16nzd11",
+        "columns": null
+      },
+      "id": "Field_019yw8h"
+    },
+    {
+      "label": "Adjuster's Assesment",
+      "components": [
+        {
+          "label": "Adjuster Report",
+          "type": "documentPreview",
+          "layout": {
+            "row": "Row_1msog14",
+            "columns": null
+          },
+          "id": "Field_02hdlz1",
+          "dataSource": "=adjuster_report_url",
+          "maxHeight": 50
+        }
+      ],
+      "showOutline": true,
+      "type": "group",
+      "layout": {
+        "row": "Row_0sxbvmd",
+        "columns": null
+      },
+      "id": "Field_046acdl"
+    },
+    {
+      "label": "Payment Authorization",
+      "components": [
+        {
+          "label": "Decision Type",
+          "values": [
+            {
+              "label": "Approve",
+              "value": "approve"
+            },
+            {
+              "label": "Reject",
+              "value": "reject"
+            }
+          ],
+          "type": "radio",
+          "layout": {
+            "row": "Row_04zpypn",
+            "columns": null
+          },
+          "id": "Field_1sc35jv",
+          "key": "decision_type"
+        },
+        {
+          "label": "Desicion Notes / Justification",
+          "type": "textarea",
+          "layout": {
+            "row": "Row_14mlg72",
+            "columns": null
+          },
+          "id": "Field_1cpkdm3",
+          "key": "decision_notes"
+        }
+      ],
+      "showOutline": true,
+      "type": "group",
+      "layout": {
+        "row": "Row_1y6v6w1",
+        "columns": null
+      },
+      "id": "Field_0i7eo8p"
+    },
+    {
+      "label": "Save",
+      "action": "submit",
+      "type": "button",
+      "layout": {
+        "row": "Row_14iocfo",
+        "columns": null
+      },
+      "id": "Field_0ecllvv"
+    }
+  ],
+  "type": "default",
+  "id": "check_invoice_form",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "schemaVersion": 19
+}

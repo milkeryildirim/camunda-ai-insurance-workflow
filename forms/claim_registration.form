@@ -1,0 +1,180 @@
+{
+  "components": [
+    {
+      "label": "Policy Info",
+      "components": [
+        {
+          "label": "Policy Number",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_0l2ckwz",
+            "columns": null
+          },
+          "id": "Field_14cmk9u",
+          "key": "policy_number"
+        }
+      ],
+      "showOutline": true,
+      "type": "group",
+      "layout": {
+        "row": "Row_10d4d6a",
+        "columns": null
+      },
+      "id": "Field_0qxm5xv"
+    },
+    {
+      "label": "Incident Details",
+      "components": [
+        {
+          "subtype": "date",
+          "dateLabel": "Date of Incident",
+          "type": "datetime",
+          "layout": {
+            "row": "Row_0mcl8pk",
+            "columns": 8
+          },
+          "id": "Field_0vkvmet",
+          "key": "incident_date"
+        },
+        {
+          "subtype": "time",
+          "type": "datetime",
+          "layout": {
+            "row": "Row_0mcl8pk",
+            "columns": null
+          },
+          "id": "Field_0n8wf46",
+          "key": "incident_type",
+          "timeLabel": "Time of Incident",
+          "timeSerializingFormat": "utc_offset",
+          "timeInterval": 5,
+          "use24h": true
+        },
+        {
+          "label": "Estimated Loss Amount",
+          "type": "number",
+          "layout": {
+            "row": "Row_0h6sweh",
+            "columns": null
+          },
+          "id": "Field_1hcvscw",
+          "key": "incident_estimated_loss_amount",
+          "decimalDigits": 2,
+          "increment": "0.01"
+        },
+        {
+          "label": "Type of Claim",
+          "values": [
+            {
+              "label": "Auto",
+              "value": "auto"
+            },
+            {
+              "label": "Home",
+              "value": "home"
+            },
+            {
+              "label": "Health",
+              "value": "health"
+            }
+          ],
+          "type": "select",
+          "layout": {
+            "row": "Row_0h6sweh",
+            "columns": null
+          },
+          "id": "Field_0trd19p",
+          "key": "claim_type"
+        },
+        {
+          "label": "Description of Incident",
+          "type": "textarea",
+          "layout": {
+            "row": "Row_1hmlm12",
+            "columns": null
+          },
+          "id": "Field_0t9djqh",
+          "key": "incident_description"
+        },
+        {
+          "label": "Incident Location",
+          "components": [
+            {
+              "label": "Street / Neighborhood",
+              "type": "textfield",
+              "layout": {
+                "row": "Row_1s8e5hr",
+                "columns": null
+              },
+              "id": "Field_00ra2rz",
+              "key": "incident_street"
+            },
+            {
+              "label": "Street Number",
+              "type": "textfield",
+              "layout": {
+                "row": "Row_1s8e5hr",
+                "columns": null
+              },
+              "id": "Field_0l2ulwc",
+              "key": "incident_street_number"
+            },
+            {
+              "label": "City / Province",
+              "type": "textfield",
+              "layout": {
+                "row": "Row_1vrgxzv",
+                "columns": null
+              },
+              "id": "Field_1gy92k6",
+              "key": "incident_city"
+            },
+            {
+              "label": "Postal Code",
+              "type": "textfield",
+              "layout": {
+                "row": "Row_1vrgxzv",
+                "columns": null
+              },
+              "id": "Field_170mpmy",
+              "key": "incident_postal_code"
+            }
+          ],
+          "showOutline": true,
+          "type": "group",
+          "layout": {
+            "row": "Row_0nrb67d",
+            "columns": null
+          },
+          "id": "Field_0k5l39y"
+        }
+      ],
+      "showOutline": true,
+      "type": "group",
+      "layout": {
+        "row": "Row_0bnedyh",
+        "columns": null
+      },
+      "id": "Field_1ppos32"
+    },
+    {
+      "label": "Save",
+      "action": "submit",
+      "type": "button",
+      "layout": {
+        "row": "Row_12h8j1y",
+        "columns": null
+      },
+      "id": "Field_159kppl"
+    }
+  ],
+  "type": "default",
+  "id": "claim_registration_form",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "schemaVersion": 19
+}

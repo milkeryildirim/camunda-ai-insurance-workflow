@@ -1,0 +1,192 @@
+{
+  "components": [
+    {
+      "label": "Claim Summary",
+      "components": [
+        {
+          "label": "Claim File Number",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_06xm51q",
+            "columns": null
+          },
+          "id": "Field_1hi0ow4",
+          "key": "claim_file_number",
+          "disabled": false,
+          "readonly": true
+        },
+        {
+          "label": "Policy Number",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_06xm51q",
+            "columns": null
+          },
+          "id": "Field_1uwya4z",
+          "key": "policy_number",
+          "disabled": false,
+          "readonly": true
+        },
+        {
+          "label": "Policyholder - Firstname",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_0xqcbuv",
+            "columns": null
+          },
+          "id": "Field_151zn1o",
+          "key": "customer_firstname",
+          "disabled": false,
+          "readonly": "=true"
+        },
+        {
+          "label": "Policyholder - Lastname",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_0xqcbuv",
+            "columns": null
+          },
+          "id": "Field_04pnv8x",
+          "key": "customer_lastname",
+          "readonly": true,
+          "properties": {}
+        },
+        {
+          "label": "Type of Claim",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_0kec1f9",
+            "columns": null
+          },
+          "id": "Field_1wqwqi3",
+          "key": "claim_type",
+          "readonly": true
+        }
+      ],
+      "showOutline": true,
+      "type": "group",
+      "layout": {
+        "row": "Row_16nzd11",
+        "columns": null
+      },
+      "id": "Field_019yw8h"
+    },
+    {
+      "label": "Invoice Review",
+      "components": [
+        {
+          "label": "Customer Invoice",
+          "type": "documentPreview",
+          "layout": {
+            "row": "Row_0r46ihc",
+            "columns": null
+          },
+          "id": "Field_08ggzuk",
+          "dataSource": "=customer_invoice_url",
+          "maxHeight": 50
+        },
+        {
+          "label": "Please enter the details you see on the invoice above",
+          "type": "textarea",
+          "layout": {
+            "row": "Row_1rbwnmu",
+            "columns": null
+          },
+          "id": "Field_0p510wd",
+          "key": "invoice_details"
+        },
+        {
+          "subtype": "date",
+          "dateLabel": "Invoice Date",
+          "type": "datetime",
+          "layout": {
+            "row": "Row_13tx6in",
+            "columns": null
+          },
+          "id": "Field_1dwudmd",
+          "key": "invoice_date"
+        },
+        {
+          "label": "Invoice Amount",
+          "type": "number",
+          "layout": {
+            "row": "Row_13tx6in",
+            "columns": null
+          },
+          "id": "Field_1er5m0w",
+          "key": "invoice_amount",
+          "decimalDigits": 2,
+          "increment": "0.01"
+        },
+        {
+          "label": "Invoice Provider Name",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_12lpsnj",
+            "columns": null
+          },
+          "id": "Field_1ixabxu",
+          "key": "textfield_hlxm4y"
+        }
+      ],
+      "showOutline": true,
+      "type": "group",
+      "layout": {
+        "row": "Row_10x23hx",
+        "columns": null
+      },
+      "id": "Field_1xkym83"
+    },
+    {
+      "label": "Provider Verification",
+      "components": [
+        {
+          "label": "Is this a partnered provider?",
+          "values": [
+            {
+              "label": "Yes",
+              "value": "true"
+            },
+            {
+              "label": "No",
+              "value": "false"
+            }
+          ],
+          "type": "radio",
+          "layout": {
+            "row": "Row_0ny8yr0",
+            "columns": null
+          },
+          "id": "Field_0u8jthg",
+          "key": "is_partnered_provider"
+        }
+      ],
+      "showOutline": true,
+      "type": "group",
+      "layout": {
+        "row": "Row_14umm7v",
+        "columns": null
+      },
+      "id": "Field_1yxlnk3"
+    },
+    {
+      "label": "Save",
+      "action": "submit",
+      "type": "button",
+      "layout": {
+        "row": "Row_1pgokyq",
+        "columns": null
+      },
+      "id": "Field_16292k3"
+    }
+  ],
+  "type": "default",
+  "id": "payment_decision_form",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "schemaVersion": 19
+}
