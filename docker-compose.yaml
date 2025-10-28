@@ -1,0 +1,43 @@
+version: '3.8'
+
+# This Docker Compose file starts a single Camunda 7 Platform instance.
+# It uses the default configuration, which includes an embedded H2 file database.
+# This is ideal for local development and testing.
+
+services:
+  camunda-platform:
+    # Use the specific Camunda Platform 7.24.0 image
+    image: camunda/camunda-bpm-platform:run-7.24.0
+
+    # A friendly name for the running container
+    container_name: camunda-platform-h2-dev
+
+    # Port mapping:
+    # We map the host machine's port 8080 to the container's internal port 8080,
+    # which is where the Tomcat server (running Camunda) listens.
+    ports:
+      - "8080:8080"
+
+    # --- Volume Mounts ---
+    # Mount the local bpmn folder to Camunda's auto-deployment directory
+    # This will automatically deploy BPMN files and forms on startup
+    volumes:
+      - "./camunda-resources:/camunda/configuration/resources:ro"
+
+    # --- H2 Database Configuration ---
+    # We are NOT setting any 'DB_DRIVER', 'DB_URL', 'DB_USERNAME', or 'DB_PASSWORD'
+    # environment variables.
+    # When these variables are absent, the image defaults to using an
+    # embedded H2 database. The database file will be created inside the container's
+    # filesystem and will be lost if the container is removed (non-persistent).
+    # This is acceptable for simple local development.
+
+    environment:
+      # We explicitly disable the REST API CSRF prevention for easier
+      # local development and testing with tools like Postman.
+      # DO NOT do this in a production environment.
+      - "CAMUNDA_BPM_CSRF_PREVENTION_ENABLED=false"
+
+      # Disable example applications according to Camunda Run documentation
+      # This prevents the Invoice example and other demo applications from being deployed
+      - "CAMUNDA_BPM_RUN_EXAMPLE_APPLICATIONS_ENABLED=false"
