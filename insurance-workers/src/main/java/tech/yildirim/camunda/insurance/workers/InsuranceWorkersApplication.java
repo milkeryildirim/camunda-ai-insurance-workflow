@@ -2,6 +2,7 @@ package tech.yildirim.camunda.insurance.workers;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cache.annotation.EnableCaching;
 
 /**
  * Main Spring Boot application class for the Camunda Insurance Workers service.
@@ -12,6 +13,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * implementations as external task handlers.</p>
  */
 @SpringBootApplication
+@EnableCaching
 public class InsuranceWorkersApplication {
 
   /**

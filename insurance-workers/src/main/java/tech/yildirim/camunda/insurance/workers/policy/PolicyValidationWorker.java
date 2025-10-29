@@ -1,5 +1,6 @@
 package tech.yildirim.camunda.insurance.workers.policy;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.client.task.ExternalTask;
 import org.camunda.bpm.client.task.ExternalTaskService;
@@ -7,27 +8,33 @@ import org.springframework.stereotype.Component;
 import tech.yildirim.camunda.insurance.workers.common.AbstractCamundaWorker;
 
 import java.util.Map;
+import tech.yildirim.camunda.insurance.workers.common.ProcInstVars;
 
 /**
- * External task worker responsible for validating insurance policies.
- * This worker handles policy validation tasks from the Camunda process engine
- * and determines whether a policy is valid for claim processing.
+ * External task worker that validates insurance policies.
  *
- * <p>The worker subscribes to the "policy-validation" topic and processes
- * external tasks by checking policy status, coverage, and validity dates.</p>
+ * <p>This worker subscribes to the external task topic identified by {@link #TOPIC_NAME} and
+ * performs basic policy validation by delegating to {@link PolicyService}. The validation result is
+ * written back to the process as a process variable named by {@link ProcInstVars#POLICY_NUMBER}.
+ *
+ * <p>Implementation notes:
+ * - This class uses the Camunda External Task client model and completes tasks using
+ *   {@link AbstractCamundaWorker#completeTask(ExternalTask, ExternalTaskService, Map)}.
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class PolicyValidationWorker extends AbstractCamundaWorker {
 
+  /** External task topic this worker subscribes to. */
   private static final String TOPIC_NAME = "insurance.claim.policy-validate";
-  private static final String POLICY_VALID_VAR = "is_policy_valid";
-  private static final String POLICY_NUMBER_VAR = "policy_number";
+
+  private final PolicyService policyService;
 
   /**
-   * Returns the topic name this worker subscribes to.
+   * Returns the topic name the worker subscribes to.
    *
-   * @return the topic name "policy-validation"
+   * @return the external task topic name
    */
   @Override
   public String getTopicName() {
@@ -35,46 +42,46 @@ public class PolicyValidationWorker extends AbstractCamundaWorker {
   }
 
   /**
-   * Executes the policy validation business logic.
-   * Validates the insurance policy and sets the validation result
-   * as a process variable for the workflow to continue.
+   * Executes business logic for the external task: reads the policy number from the task,
+   * validates the policy and completes the task while setting the validation result as a
+   * process variable.
    *
-   * @param externalTask the external task containing policy information
-   * @param externalTaskService service to complete the task
-   * @throws IllegalArgumentException if policy number is invalid
+   * @param externalTask the external task containing input variables
+   * @param externalTaskService the service used to complete or handle the external task
+   * @throws IllegalArgumentException when the policy number is null or empty
    */
   @Override
-  protected void executeBusinessLogic(ExternalTask externalTask, ExternalTaskService externalTaskService)
+  protected void executeBusinessLogic(
+      ExternalTask externalTask, ExternalTaskService externalTaskService)
       throws IllegalArgumentException {
 
-    String policyNumber = externalTask.getVariable(POLICY_NUMBER_VAR);
+    // read and coerce the policy number variable
+    final String policyNumber = externalTask.getVariable(ProcInstVars.POLICY_NUMBER);
     log.info("Validating policy number: {}", policyNumber);
 
-    boolean isPolicyValid = validatePolicy(policyNumber);
+    final boolean isPolicyValid = validatePolicy(policyNumber);
 
-    completeTask(externalTask, externalTaskService,
-        Map.of(POLICY_VALID_VAR, isPolicyValid));
+    // persist validation result back to the process instance
+    completeTask(externalTask, externalTaskService, Map.of(ProcInstVars.IS_POLICY_VALID, isPolicyValid));
 
-    log.info("Policy validation result for {}: {}",
-             policyNumber, isPolicyValid ? "VALID" : "INVALID");
+    log.info("Policy validation result for {}: {}", policyNumber, isPolicyValid ? "VALID" : "INVALID");
   }
 
   /**
-   * Validates the given policy number by checking various policy criteria.
-   * This is a simplified implementation that can be extended with real
-   * policy validation logic, database lookups, or external service calls.
+   * Validates the provided policy number using {@link PolicyService}.
    *
-   * @param policyNumber the policy number to validate
-   * @return true if the policy is valid, false otherwise
-   * @throws IllegalArgumentException if policy number is null or empty
+   * <p>Throws {@link IllegalArgumentException} when the input is null or empty. The actual
+   * validation semantics (active status, date checks, etc.) are delegated to {@link PolicyService}.
+   *
+   * @param policyNumber the policy number to validate (must not be null or blank)
+   * @return true when the policy is considered valid, false otherwise
+   * @throws IllegalArgumentException when {@code policyNumber} is null or blank
    */
   private boolean validatePolicy(String policyNumber) throws IllegalArgumentException {
     if (policyNumber == null || policyNumber.trim().isEmpty()) {
       throw new IllegalArgumentException("Policy number cannot be null or empty");
     }
 
-    log.debug("Validating policy number format: {}", policyNumber);
-
-    return false;
+    return policyService.isPolicyValid(policyNumber);
   }
 }

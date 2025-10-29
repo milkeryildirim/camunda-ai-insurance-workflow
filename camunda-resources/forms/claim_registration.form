@@ -44,7 +44,7 @@
             "columns": null
           },
           "id": "Field_0n8wf46",
-          "key": "incident_type",
+          "key": "incident_time",
           "timeLabel": "Time of Incident",
           "timeSerializingFormat": "utc_offset",
           "timeInterval": 5,
