@@ -26,21 +26,23 @@ import tech.yildirim.camunda.insurance.workers.policy.PolicyService;
  * Camunda external task worker responsible for creating insurance claims based on incident reports.
  *
  * <p>This worker processes claim creation requests by:
+ *
  * <ul>
- *   <li>Retrieving policy and customer information</li>
- *   <li>Creating appropriate claim type (AUTO, HOME, or HEALTH)</li>
- *   <li>Setting initial claim status and estimated amount</li>
- *   <li>Completing the task with customer and claim information</li>
+ *   <li>Retrieving policy and customer information
+ *   <li>Creating appropriate claim type (AUTO, HOME, or HEALTH)
+ *   <li>Setting initial claim status and estimated amount
+ *   <li>Completing the task with customer and claim information
  * </ul>
  *
  * <p>The worker subscribes to the topic "insurance.claim.create-claim" and expects the following
  * process variables:
+ *
  * <ul>
- *   <li>{@code POLICY_NUMBER} - The policy number for which the claim is being created</li>
- *   <li>{@code INCIDENT_DESCRIPTION} - Description of the incident</li>
- *   <li>{@code CLAIM_TYPE} - Type of claim (AUTO, HOME, or HEALTH)</li>
- *   <li>{@code INCIDENT_DATE} - Date when the incident occurred</li>
- *   <li>{@code INCIDENT_ESTIMATED_LOSS_AMOUNT} - Estimated loss amount</li>
+ *   <li>{@code POLICY_NUMBER} - The policy number for which the claim is being created
+ *   <li>{@code INCIDENT_DESCRIPTION} - Description of the incident
+ *   <li>{@code CLAIM_TYPE} - Type of claim (AUTO, HOME, or HEALTH)
+ *   <li>{@code INCIDENT_DATE} - Date when the incident occurred
+ *   <li>{@code INCIDENT_ESTIMATED_LOSS_AMOUNT} - Estimated loss amount
  * </ul>
  *
  * @author M.Ilker Yildirim
@@ -61,11 +63,12 @@ public class ClaimCreationWorker extends AbstractCamundaWorker {
    * Executes the business logic for creating insurance claims.
    *
    * <p>This method processes the external task by:
+   *
    * <ol>
-   *   <li>Extracting required variables from the task</li>
-   *   <li>Retrieving policy and customer information</li>
-   *   <li>Creating the appropriate claim type based on the claim type variable</li>
-   *   <li>Completing the task with customer and claim information</li>
+   *   <li>Extracting required variables from the task
+   *   <li>Retrieving policy and customer information
+   *   <li>Creating the appropriate claim type based on the claim type variable
+   *   <li>Completing the task with customer and claim information
    * </ol>
    *
    * @param externalTask the external task containing process variables
@@ -86,8 +89,11 @@ public class ClaimCreationWorker extends AbstractCamundaWorker {
     Date incidentDate = externalTask.getVariable(ProcInstVars.INCIDENT_DATE);
     Double estimatedAmount = externalTask.getVariable(ProcInstVars.INCIDENT_ESTIMATED_LOSS_AMOUNT);
 
-    log.debug("Processing claim creation - Policy: {}, Type: {}, Amount: {}",
-        policyNumber, claimType, estimatedAmount);
+    log.debug(
+        "Processing claim creation - Policy: {}, Type: {}, Amount: {}",
+        policyNumber,
+        claimType,
+        estimatedAmount);
 
     // Retrieve policy and customer information
     PolicyDto policyDto = policyService.getPolicyByPolicyNumber(policyNumber);
@@ -97,38 +103,50 @@ public class ClaimCreationWorker extends AbstractCamundaWorker {
 
     CustomerDto customer = customerService.getCustomer(policyDto.getCustomerId());
     if (customer == null) {
-      throw new IllegalStateException("Customer not found for customer ID: " + policyDto.getCustomerId());
+      throw new IllegalStateException(
+          "Customer not found for customer ID: " + policyDto.getCustomerId());
     }
 
     // Convert incident date
-    LocalDate incidentLocalDate = incidentDate.toInstant()
-        .atZone(java.time.ZoneId.systemDefault())
-        .toLocalDate();
+    LocalDate incidentLocalDate =
+        incidentDate.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
 
     // Create claim based on type
-    ClaimDto createdClaim = createClaimByType(claimType, policyDto, incidentDescription,
-        incidentLocalDate, estimatedAmount);
+    ClaimDto createdClaim =
+        createClaimByType(
+            claimType, policyDto, incidentDescription, incidentLocalDate, estimatedAmount);
 
     if (createdClaim == null) {
       throw new IllegalStateException("Failed to create claim of type: " + claimType);
     }
 
+    Long claimId = createdClaim.getId();
+
     // Safely get claim number with null check
     String claimNumber = createdClaim.getClaimNumber();
     if (claimNumber == null) {
       log.warn("Created claim has null claim number, using claim ID as fallback");
-      claimNumber = "CLAIM-" + createdClaim.getId();
+      claimNumber = "CLAIM-" + claimId;
     }
 
-    log.info("Successfully created claim with number: {} for policy: {}",
-        claimNumber, policyNumber);
+    log.info(
+        "Successfully created claim with number: {} for policy: {}", claimNumber, policyNumber);
 
     // Complete task with result variables
-    completeTask(externalTask, externalTaskService, Map.of(
-        ProcInstVars.CUSTOMER_FIRSTNAME, customer.getFirstName(),
-        ProcInstVars.CUSTOMER_LASTNAME, customer.getLastName(),
-        ProcInstVars.CLAIM_FILE_NUMBER, claimNumber
-    ));
+    completeTask(
+        externalTask,
+        externalTaskService,
+        Map.of(
+            ProcInstVars.CUSTOMER_FIRSTNAME,
+            customer.getFirstName(),
+            ProcInstVars.CUSTOMER_LASTNAME,
+            customer.getLastName(),
+            ProcInstVars.CUSTOMER_NOTIFICATION_EMAIL,
+            customer.getEmail(),
+            ProcInstVars.CLAIM_FILE_NUMBER,
+            claimNumber,
+            ProcInstVars.CLAIM_ID,
+            claimId));
   }
 
   /**
@@ -142,54 +160,66 @@ public class ClaimCreationWorker extends AbstractCamundaWorker {
    * @return the created claim DTO
    * @throws IllegalArgumentException if an unknown claim type is provided
    */
-  private ClaimDto createClaimByType(String claimType, PolicyDto policyDto,
-      String incidentDescription, LocalDate incidentDate, Double estimatedAmount) {
+  private ClaimDto createClaimByType(
+      String claimType,
+      PolicyDto policyDto,
+      String incidentDescription,
+      LocalDate incidentDate,
+      Double estimatedAmount) {
 
     ClaimDto createdClaim;
     BigDecimal estimatedAmountBigDecimal = BigDecimal.valueOf(estimatedAmount);
 
-    switch (claimType.toUpperCase()) {
-      case "AUTO" -> {
-        AutoClaimDto autoClaimDto = new AutoClaimDto()
-            .policyId(policyDto.getId())
-            .description(incidentDescription)
-            .dateOfIncident(incidentDate)
-            .dateReported(LocalDate.now())
-            .estimatedAmount(estimatedAmountBigDecimal)
-            .status(StatusEnum.SUBMITTED);
+    switch (ClaimType.valueOf(claimType.toUpperCase())) {
+      case ClaimType.AUTO -> {
+        AutoClaimDto autoClaimDto =
+            new AutoClaimDto()
+                .policyId(policyDto.getId())
+                .description(incidentDescription)
+                .dateOfIncident(incidentDate)
+                .dateReported(LocalDate.now())
+                .estimatedAmount(estimatedAmountBigDecimal)
+                .status(StatusEnum.SUBMITTED);
         autoClaimDto.setClaimType(ClaimTypeEnum.AUTO_CLAIM_DTO);
 
         createdClaim = claimService.createAutoClaim(autoClaimDto);
-        log.debug("Created AUTO claim with ID: {}", createdClaim != null ? createdClaim.getId() : "null");
+        log.debug(
+            "Created AUTO claim with ID: {}", createdClaim != null ? createdClaim.getId() : "null");
       }
-      case "HOME" -> {
-        HomeClaimDto homeClaimDto = new HomeClaimDto()
-            .policyId(policyDto.getId())
-            .description(incidentDescription)
-            .dateOfIncident(incidentDate)
-            .dateReported(LocalDate.now())
-            .estimatedAmount(estimatedAmountBigDecimal)
-            .status(StatusEnum.SUBMITTED);
+      case ClaimType.HOME -> {
+        HomeClaimDto homeClaimDto =
+            new HomeClaimDto()
+                .policyId(policyDto.getId())
+                .description(incidentDescription)
+                .dateOfIncident(incidentDate)
+                .dateReported(LocalDate.now())
+                .estimatedAmount(estimatedAmountBigDecimal)
+                .status(StatusEnum.SUBMITTED);
         homeClaimDto.setClaimType(ClaimTypeEnum.HOME_CLAIM_DTO);
 
         createdClaim = claimService.createHomeClaim(homeClaimDto);
-        log.debug("Created HOME claim with ID: {}", createdClaim != null ? createdClaim.getId() : "null");
+        log.debug(
+            "Created HOME claim with ID: {}", createdClaim != null ? createdClaim.getId() : "null");
       }
-      case "HEALTH" -> {
-        HealthClaimDto healthClaimDto = new HealthClaimDto()
-            .policyId(policyDto.getId())
-            .description(incidentDescription)
-            .dateOfIncident(incidentDate)
-            .dateReported(LocalDate.now())
-            .estimatedAmount(estimatedAmountBigDecimal)
-            .status(StatusEnum.SUBMITTED);
+      case ClaimType.HEALTH -> {
+        HealthClaimDto healthClaimDto =
+            new HealthClaimDto()
+                .policyId(policyDto.getId())
+                .description(incidentDescription)
+                .dateOfIncident(incidentDate)
+                .dateReported(LocalDate.now())
+                .estimatedAmount(estimatedAmountBigDecimal)
+                .status(StatusEnum.SUBMITTED);
         healthClaimDto.setClaimType(ClaimTypeEnum.HEALTH_CLAIM_DTO);
 
         createdClaim = claimService.createHealthClaim(healthClaimDto);
-        log.debug("Created HEALTH claim with ID: {}", createdClaim != null ? createdClaim.getId() : "null");
+        log.debug(
+            "Created HEALTH claim with ID: {}",
+            createdClaim != null ? createdClaim.getId() : "null");
       }
-      default -> throw new IllegalArgumentException("Unknown claim type: " + claimType +
-          ". Supported types are: AUTO, HOME, HEALTH");
+      default ->
+          throw new IllegalArgumentException(
+              "Unknown claim type: " + claimType + ". Supported types are: AUTO, HOME, HEALTH");
     }
 
     return createdClaim;

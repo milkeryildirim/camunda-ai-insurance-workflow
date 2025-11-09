@@ -27,6 +27,7 @@ import tech.yildirim.aiinsurance.api.generated.clients.ClaimsApiClient;
 import tech.yildirim.aiinsurance.api.generated.clients.EmployeesApiClient;
 import tech.yildirim.aiinsurance.api.generated.model.AssignAdjusterRequestDto;
 import tech.yildirim.aiinsurance.api.generated.model.AutoClaimDto;
+import tech.yildirim.aiinsurance.api.generated.model.ClaimDecisionDto;
 import tech.yildirim.aiinsurance.api.generated.model.EmployeeDto;
 import tech.yildirim.aiinsurance.api.generated.model.EmployeeDto.EmploymentTypeEnum;
 import tech.yildirim.aiinsurance.api.generated.model.EmployeeDto.SpecializationAreaEnum;
@@ -411,6 +412,255 @@ class ClaimServiceTest {
   }
 
   @Nested
+  @DisplayName("Claim Decision Tests")
+  class ClaimDecisionTests {
+
+    @Test
+    @DisplayName("Should create auto claim decision successfully")
+    void shouldCreateAutoClaimDecisionSuccessfully() {
+      // Given
+      ClaimDecisionDto inputDecision = createClaimDecisionDto(1L, null);
+      ClaimDecisionDto createdDecision = createClaimDecisionDto(1L, 100L);
+      when(claimsApiClient.createAutoClaimDecision(1L, inputDecision))
+          .thenReturn(new ResponseEntity<>(createdDecision, HttpStatus.CREATED));
+
+      // When
+      ClaimDecisionDto result = claimService.createClaimDecision(inputDecision, ClaimType.AUTO);
+
+      // Then
+      assertThat(result).isNotNull();
+      assertThat(result.getClaimId()).isEqualTo(1L);
+      assertThat(result.getId()).isEqualTo(100L);
+      verify(claimsApiClient).createAutoClaimDecision(1L, inputDecision);
+    }
+
+    @Test
+    @DisplayName("Should create health claim decision successfully")
+    void shouldCreateHealthClaimDecisionSuccessfully() {
+      // Given
+      ClaimDecisionDto inputDecision = createClaimDecisionDto(2L, null);
+      ClaimDecisionDto createdDecision = createClaimDecisionDto(2L, 101L);
+      when(claimsApiClient.createHealthClaimDecision(2L, inputDecision))
+          .thenReturn(new ResponseEntity<>(createdDecision, HttpStatus.CREATED));
+
+      // When
+      ClaimDecisionDto result = claimService.createClaimDecision(inputDecision, ClaimType.HEALTH);
+
+      // Then
+      assertThat(result).isNotNull();
+      assertThat(result.getClaimId()).isEqualTo(2L);
+      assertThat(result.getId()).isEqualTo(101L);
+      verify(claimsApiClient).createHealthClaimDecision(2L, inputDecision);
+    }
+
+    @Test
+    @DisplayName("Should create home claim decision successfully")
+    void shouldCreateHomeClaimDecisionSuccessfully() {
+      // Given
+      ClaimDecisionDto inputDecision = createClaimDecisionDto(3L, null);
+      ClaimDecisionDto createdDecision = createClaimDecisionDto(3L, 102L);
+      when(claimsApiClient.createHomeClaimDecision(3L, inputDecision))
+          .thenReturn(new ResponseEntity<>(createdDecision, HttpStatus.CREATED));
+
+      // When
+      ClaimDecisionDto result = claimService.createClaimDecision(inputDecision, ClaimType.HOME);
+
+      // Then
+      assertThat(result).isNotNull();
+      assertThat(result.getClaimId()).isEqualTo(3L);
+      assertThat(result.getId()).isEqualTo(102L);
+      verify(claimsApiClient).createHomeClaimDecision(3L, inputDecision);
+    }
+
+    @Test
+    @DisplayName("Should throw exception when claim decision data is null")
+    void shouldThrowExceptionWhenClaimDecisionDataIsNull() {
+      // When & Then
+      assertThatThrownBy(() -> claimService.createClaimDecision(null, ClaimType.AUTO))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("Claim decision data cannot be null");
+    }
+
+    @Test
+    @DisplayName("Should throw exception when claim type is null")
+    void shouldThrowExceptionWhenClaimTypeIsNull() {
+      // Given
+      ClaimDecisionDto inputDecision = createClaimDecisionDto(1L, null);
+
+      // When & Then
+      assertThatThrownBy(() -> claimService.createClaimDecision(inputDecision, null))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("Claim type cannot be null");
+    }
+
+    @Test
+    @DisplayName("Should return null when ClaimsApiClient is not available for decision creation")
+    void shouldReturnNullWhenClaimsApiClientNotAvailableForDecisionCreation() {
+      // Given
+      when(claimsApiClientProvider.getIfAvailable()).thenReturn(null);
+      ClaimDecisionDto inputDecision = createClaimDecisionDto(1L, null);
+
+      // When
+      ClaimDecisionDto result = claimService.createClaimDecision(inputDecision, ClaimType.AUTO);
+
+      // Then
+      assertThat(result).isNull();
+    }
+
+    @Test
+    @DisplayName("Should return null when decision creation API call fails")
+    void shouldReturnNullWhenDecisionCreationApiCallFails() {
+      // Given
+      ClaimDecisionDto inputDecision = createClaimDecisionDto(1L, null);
+      when(claimsApiClient.createAutoClaimDecision(1L, inputDecision))
+          .thenThrow(new RuntimeException("API Error"));
+
+      // When
+      ClaimDecisionDto result = claimService.createClaimDecision(inputDecision, ClaimType.AUTO);
+
+      // Then
+      assertThat(result).isNull();
+    }
+
+    @Test
+    @DisplayName("Should return null when decision creation returns null response")
+    void shouldReturnNullWhenDecisionCreationReturnsNullResponse() {
+      // Given
+      ClaimDecisionDto inputDecision = createClaimDecisionDto(1L, null);
+      when(claimsApiClient.createAutoClaimDecision(1L, inputDecision))
+          .thenReturn(null);
+
+      // When
+      ClaimDecisionDto result = claimService.createClaimDecision(inputDecision, ClaimType.AUTO);
+
+      // Then
+      assertThat(result).isNull();
+    }
+
+    @Test
+    @DisplayName("Should update auto claim decision successfully")
+    void shouldUpdateAutoClaimDecisionSuccessfully() {
+      // Given
+      ClaimDecisionDto updateDecision = createClaimDecisionDto(1L, 100L);
+      ClaimDecisionDto updatedDecision = createClaimDecisionDto(1L, 100L);
+      when(claimsApiClient.updateAutoClaimDecision(1L, updateDecision))
+          .thenReturn(new ResponseEntity<>(updatedDecision, HttpStatus.OK));
+
+      // When
+      ClaimDecisionDto result = claimService.updateClaimDecision(updateDecision, ClaimType.AUTO);
+
+      // Then
+      assertThat(result).isNotNull();
+      assertThat(result.getClaimId()).isEqualTo(1L);
+      assertThat(result.getId()).isEqualTo(100L);
+      verify(claimsApiClient).updateAutoClaimDecision(1L, updateDecision);
+    }
+
+    @Test
+    @DisplayName("Should update health claim decision successfully")
+    void shouldUpdateHealthClaimDecisionSuccessfully() {
+      // Given
+      ClaimDecisionDto updateDecision = createClaimDecisionDto(2L, 101L);
+      ClaimDecisionDto updatedDecision = createClaimDecisionDto(2L, 101L);
+      when(claimsApiClient.updateHealthClaimDecision(2L, updateDecision))
+          .thenReturn(new ResponseEntity<>(updatedDecision, HttpStatus.OK));
+
+      // When
+      ClaimDecisionDto result = claimService.updateClaimDecision(updateDecision, ClaimType.HEALTH);
+
+      // Then
+      assertThat(result).isNotNull();
+      assertThat(result.getClaimId()).isEqualTo(2L);
+      assertThat(result.getId()).isEqualTo(101L);
+      verify(claimsApiClient).updateHealthClaimDecision(2L, updateDecision);
+    }
+
+    @Test
+    @DisplayName("Should update home claim decision successfully")
+    void shouldUpdateHomeClaimDecisionSuccessfully() {
+      // Given
+      ClaimDecisionDto updateDecision = createClaimDecisionDto(3L, 102L);
+      ClaimDecisionDto updatedDecision = createClaimDecisionDto(3L, 102L);
+      when(claimsApiClient.updateHomeClaimDecision(3L, updateDecision))
+          .thenReturn(new ResponseEntity<>(updatedDecision, HttpStatus.OK));
+
+      // When
+      ClaimDecisionDto result = claimService.updateClaimDecision(updateDecision, ClaimType.HOME);
+
+      // Then
+      assertThat(result).isNotNull();
+      assertThat(result.getClaimId()).isEqualTo(3L);
+      assertThat(result.getId()).isEqualTo(102L);
+      verify(claimsApiClient).updateHomeClaimDecision(3L, updateDecision);
+    }
+
+    @Test
+    @DisplayName("Should throw exception when update claim decision data is null")
+    void shouldThrowExceptionWhenUpdateClaimDecisionDataIsNull() {
+      // When & Then
+      assertThatThrownBy(() -> claimService.updateClaimDecision(null, ClaimType.AUTO))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("Claim decision data cannot be null");
+    }
+
+    @Test
+    @DisplayName("Should throw exception when update claim type is null")
+    void shouldThrowExceptionWhenUpdateClaimTypeIsNull() {
+      // Given
+      ClaimDecisionDto updateDecision = createClaimDecisionDto(1L, 100L);
+
+      // When & Then
+      assertThatThrownBy(() -> claimService.updateClaimDecision(updateDecision, null))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("Claim type cannot be null");
+    }
+
+    @Test
+    @DisplayName("Should return null when ClaimsApiClient is not available for decision update")
+    void shouldReturnNullWhenClaimsApiClientNotAvailableForDecisionUpdate() {
+      // Given
+      when(claimsApiClientProvider.getIfAvailable()).thenReturn(null);
+      ClaimDecisionDto updateDecision = createClaimDecisionDto(1L, 100L);
+
+      // When
+      ClaimDecisionDto result = claimService.updateClaimDecision(updateDecision, ClaimType.AUTO);
+
+      // Then
+      assertThat(result).isNull();
+    }
+
+    @Test
+    @DisplayName("Should return null when decision update API call fails")
+    void shouldReturnNullWhenDecisionUpdateApiCallFails() {
+      // Given
+      ClaimDecisionDto updateDecision = createClaimDecisionDto(1L, 100L);
+      when(claimsApiClient.updateAutoClaimDecision(1L, updateDecision))
+          .thenThrow(new RuntimeException("API Error"));
+
+      // When
+      ClaimDecisionDto result = claimService.updateClaimDecision(updateDecision, ClaimType.AUTO);
+
+      // Then
+      assertThat(result).isNull();
+    }
+
+    @Test
+    @DisplayName("Should return null when decision update returns null response")
+    void shouldReturnNullWhenDecisionUpdateReturnsNullResponse() {
+      // Given
+      ClaimDecisionDto updateDecision = createClaimDecisionDto(1L, 100L);
+      when(claimsApiClient.updateAutoClaimDecision(1L, updateDecision))
+          .thenReturn(null);
+
+      // When
+      ClaimDecisionDto result = claimService.updateClaimDecision(updateDecision, ClaimType.AUTO);
+
+      // Then
+      assertThat(result).isNull();
+    }
+  }
+
+  @Nested
   @DisplayName("Error Handling Tests")
   class ErrorHandlingTests {
 
@@ -499,5 +749,17 @@ class ClaimServiceTest {
     employee.setSpecializationArea(specialization);
     employee.setEmploymentType(EmploymentTypeEnum.EXTERNAL);
     return employee;
+  }
+
+  private ClaimDecisionDto createClaimDecisionDto(Long claimId, Long decisionId) {
+    ClaimDecisionDto decision = new ClaimDecisionDto();
+    decision.setId(decisionId);
+    decision.setClaimId(claimId);
+    decision.setDecisionMakerId(123L); // Sample decision maker ID
+    decision.setDecisionType(ClaimDecisionDto.DecisionTypeEnum.APPROVED);
+    decision.setApprovedAmount(new BigDecimal("3000.00"));
+    decision.setReasoning("Claim approved based on policy coverage");
+    decision.setDecisionDate(java.time.OffsetDateTime.now());
+    return decision;
   }
 }

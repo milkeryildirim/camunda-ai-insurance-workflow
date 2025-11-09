@@ -20,6 +20,7 @@
     <openapi-maven-generator.version>7.14.0</openapi-maven-generator.version>
     <spring-cloud-dependencies.version>2025.0.0</spring-cloud-dependencies.version>
     <spring-ai.version>1.0.1</spring-ai.version>
+    <openapi-starter.version>2.8.9</openapi-starter.version>
   </properties>
 
   <dependencyManagement>
@@ -58,7 +59,11 @@
     <dependency>
       <groupId>org.springdoc</groupId>
       <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-      <version>2.8.9</version>
+      <version>${openapi-starter.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.validation</groupId>
+      <artifactId>jakarta.validation-api</artifactId>
     </dependency>
 
 
@@ -108,6 +113,35 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.bpm.springboot</groupId>
+      <artifactId>camunda-bpm-spring-boot-starter-test</artifactId>
+      <version>${camunda.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.bpm</groupId>
+      <artifactId>camunda-engine</artifactId>
+      <version>${camunda.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.bpm</groupId>
+      <artifactId>camunda-bpm-assert</artifactId>
+      <version>${camunda.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.bpm</groupId>
+      <artifactId>camunda-bpm-junit5</artifactId>
+      <version>${camunda.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -178,7 +212,8 @@
               </inputSpec>
               <generatorName>spring</generatorName>
               <library>spring-cloud</library>
-              <templateDirectory>${project.basedir}/src/main/resources/openapi-templates</templateDirectory>
+              <templateDirectory>${project.basedir}/src/main/resources/openapi-templates
+              </templateDirectory>
               <apiPackage>tech.yildirim.aiinsurance.api.generated.clients</apiPackage>
               <modelPackage>tech.yildirim.aiinsurance.api.generated.model</modelPackage>
               <configOptions>

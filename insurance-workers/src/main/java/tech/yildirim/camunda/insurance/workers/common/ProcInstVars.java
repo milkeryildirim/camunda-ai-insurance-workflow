@@ -4,10 +4,16 @@ public interface ProcInstVars {
   String ADJUSTER_REPORT_URL = "adjuster_report_url";
   String APPROVED_AMOUNT = "approved_amount";
   String CLAIM_FILE_NUMBER = "claim_file_number";
+  String CLAIM_ID = "claim_id";
+  String CLAIM_REJECTED_INVALID_POLICY_NOTIFICATION_SENT_SUCCESSFULLY =
+      "claim_rejected_invalid_policy_notification_sent_successfully";
+  String CLAIM_REJECTED_INVALID_POLICY_NOTIFICATION_MESSAGE =
+      "claim_rejected_invalid_policy_notification_message";
   String CLAIM_TYPE = "claim_type";
   String CUSTOMER_FIRSTNAME = "customer_firstname";
   String CUSTOMER_INVOICE_URL = "customer_invoice_url";
   String CUSTOMER_LASTNAME = "customer_lastname";
+  String CUSTOMER_NOTIFICATION_EMAIL = "customer_notification_email";
   String DECISION_NOTES = "decision_notes";
   String DECISION_TYPE = "decision_type";
   String INCIDENT_CITY = "incident_city";
