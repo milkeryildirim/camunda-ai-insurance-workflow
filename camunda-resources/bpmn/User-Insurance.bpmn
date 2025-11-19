@@ -60,7 +60,7 @@
     <bpmn:sequenceFlow id="Flow_0f49udh" name="NO" sourceRef="Gateway_12e5x6w" targetRef="Activity_0ymb84j">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${decision_type == "reject"}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:serviceTask id="Activity_0ymb84j" name="Inform Customer of Rejection" camunda:type="external" camunda:topic="insurance.claim.inform-customer-of-rejection">
+    <bpmn:serviceTask id="Activity_0ymb84j" name="Inform Customer of Rejection" camunda:type="external" camunda:topic="insurance.claim.reject-by-decision">
       <bpmn:incoming>Flow_0f49udh</bpmn:incoming>
       <bpmn:outgoing>Flow_0akhqr6</bpmn:outgoing>
     </bpmn:serviceTask>

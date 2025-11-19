@@ -1,10 +1,15 @@
 package tech.yildirim.camunda.insurance.workers.common;
 
 public interface ProcInstVars {
+  String ADJUSTER_ID = "adjuster_id";
   String ADJUSTER_REPORT_URL = "adjuster_report_url";
   String APPROVED_AMOUNT = "approved_amount";
   String CLAIM_FILE_NUMBER = "claim_file_number";
   String CLAIM_ID = "claim_id";
+  String CLAIM_REJECTED_ADJUSTER_DECISION_NOTIFICATION_SENT_SUCCESSFULLY =
+      "claim_rejected_adjuster_decision_notification_sent_successfully";
+  String CLAIM_REJECTED_ADJUSTER_DECISION_NOTIFICATION_MESSAGE =
+      "claim_rejected_adjuster_decision_notification_message";
   String CLAIM_REJECTED_INVALID_POLICY_NOTIFICATION_SENT_SUCCESSFULLY =
       "claim_rejected_invalid_policy_notification_sent_successfully";
   String CLAIM_REJECTED_INVALID_POLICY_NOTIFICATION_MESSAGE =

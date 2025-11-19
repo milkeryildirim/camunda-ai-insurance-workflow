@@ -1,19 +1,12 @@
 package tech.yildirim.camunda.insurance.workers.claim;
 
-import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.client.task.ExternalTask;
 import org.camunda.bpm.client.task.ExternalTaskService;
 import org.springframework.stereotype.Component;
 import tech.yildirim.aiinsurance.api.generated.model.ClaimDecisionDto;
-import tech.yildirim.aiinsurance.api.generated.model.ClaimDecisionDto.DecisionTypeEnum;
 import tech.yildirim.aiinsurance.api.generated.model.PolicyDto;
-import tech.yildirim.camunda.insurance.workers.common.AbstractCamundaWorker;
 import tech.yildirim.camunda.insurance.workers.common.ProcInstVars;
 import tech.yildirim.camunda.insurance.workers.notification.NotificationService;
 import tech.yildirim.camunda.insurance.workers.policy.PolicyService;
@@ -35,22 +28,17 @@ import tech.yildirim.camunda.insurance.workers.policy.PolicyService;
  * policy validation failures. It integrates with multiple services to complete the rejection
  * workflow comprehensively.
  *
- * <p>This worker uses Bean Validation (JSR-303) annotations for input validation, providing
- * standard, declarative validation with clear error messages.
+ * <p>This worker extends {@link AbstractClaimRejectionWorker} to leverage common rejection
+ * functionality while providing specific behavior for invalid policy scenarios.
  *
  * @author Yildirim
  * @since 1.0
  */
 @Component
 @Slf4j
-@RequiredArgsConstructor
-public class ClaimRejectionInvalidPolicyWorker extends AbstractCamundaWorker {
+public class ClaimRejectionInvalidPolicyWorker extends AbstractClaimRejectionWorker {
 
-  private final ClaimService claimService;
-  private final NotificationService notificationService;
-  private final PolicyService policyService;
-  private final Validator validator;
-
+  /** The Camunda topic name that this worker subscribes to. */
   private static final String TOPIC_NAME = "insurance.claim.reject-invalid-policy";
 
   /**
@@ -58,20 +46,39 @@ public class ClaimRejectionInvalidPolicyWorker extends AbstractCamundaWorker {
    * Placeholders: customer first name, last name, claim file number, policy number.
    */
   private static final String NOTIFICATION_MESSAGE =
-"""
- Dear %s %s,
+      """
+       Dear %s %s,
 
- Unfortunately, we have to inform you that your recent claim with the reference number %s has been rejected due to an invalid policy.
- After careful review, we found that the policy number %s provided in your claim does not correspond to a valid policy in our system.
+       Unfortunately, we have to inform you that your recent claim with the reference number %s has been rejected due to an invalid policy.
+       After careful review, we found that the policy number %s provided in your claim does not correspond to a valid policy in our system.
 
- If you have any questions, please contact our customer support.
+       If you have any questions, please contact our customer support.
 
- Best regards,
- The Insurance Team
-""";
+       Best regards,
+       The Insurance Team
+      """;
 
   /** Standard decision message recorded in the system for invalid policy rejections. */
   private static final String DECISION_MESSAGE = "Claim has been rejected due to invalid policy";
+
+  private final PolicyService policyService;
+
+  /**
+   * Constructor for ClaimRejectionInvalidPolicyWorker.
+   *
+   * @param claimService the service for claim operations
+   * @param notificationService the service for sending notifications
+   * @param validator the validator for Bean Validation
+   * @param policyService the service for policy operations
+   */
+  public ClaimRejectionInvalidPolicyWorker(
+      ClaimService claimService,
+      NotificationService notificationService,
+      Validator validator,
+      PolicyService policyService) {
+    super(claimService, notificationService, validator);
+    this.policyService = policyService;
+  }
 
   /**
    * Executes the business logic for rejecting a claim due to invalid policy.
@@ -112,32 +119,29 @@ public class ClaimRejectionInvalidPolicyWorker extends AbstractCamundaWorker {
       }
 
       // Send notification to customer and capture result
-      final String notificationMessage =
-          String.format(
-              NOTIFICATION_MESSAGE,
-              request.customerFirstName(),
-              request.customerLastName(),
-              request.claimFileNumber(),
-              request.policyNumber());
+      final String notificationMessage = formatNotificationMessage(NOTIFICATION_MESSAGE, request);
 
       final boolean notificationSent =
           sendRejectionNotification(request.customerNotificationEmail(), notificationMessage);
 
       // Create and persist claim decision
       final ClaimType claimType = ClaimType.valueOf(request.claimType());
-      final ClaimDecisionDto claimDecisionDto = createRejectionDecision(request.claimId());
+      final ClaimDecisionDto claimDecisionDto =
+          createRejectionDecision(
+              request.claimId(),
+              -1L, // System decision
+              "SYSTEM",
+              DECISION_MESSAGE,
+              DECISION_MESSAGE);
+
       final ClaimDecisionDto createdDecision =
           claimService.createClaimDecision(claimDecisionDto, claimType);
 
       if (createdDecision != null) {
-        log.info(
-            "Successfully processed claim rejection - Claim ID: {}, Decision ID: {}, Notification sent: {}",
-            request.claimId(),
-            createdDecision.getId(),
-            notificationSent);
+        logSuccessfulProcessing(request, createdDecision, notificationSent);
       } else {
         log.error("Failed to create claim decision for claim ID: {}", request.claimId());
-        throw new RuntimeException("Failed to create claim decision");
+        throw new IllegalStateException("Failed to create claim decision");
       }
 
       // Complete task with notification status and message as process variables
@@ -152,83 +156,8 @@ public class ClaimRejectionInvalidPolicyWorker extends AbstractCamundaWorker {
 
     } catch (Exception ex) {
       log.error("Error processing claim rejection for invalid policy: {}", ex.getMessage(), ex);
-      throw new RuntimeException("Failed to process claim rejection", ex);
+      throw new IllegalStateException("Failed to process claim rejection", ex);
     }
-  }
-
-  /**
-   * Extracts process variables from the external task and validates them using Bean Validation.
-   *
-   * @param externalTask the external task containing process variables
-   * @return validated ClaimRejectionRequest containing all required data
-   * @throws IllegalArgumentException if any validation constraint is violated
-   */
-  private ClaimRejectionRequest extractAndValidateVariables(ExternalTask externalTask) {
-    final ClaimRejectionRequest request =
-        new ClaimRejectionRequest(
-            externalTask.getVariable(ProcInstVars.CLAIM_ID),
-            externalTask.getVariable(ProcInstVars.CLAIM_FILE_NUMBER),
-            externalTask.getVariable(ProcInstVars.CUSTOMER_FIRSTNAME),
-            externalTask.getVariable(ProcInstVars.CUSTOMER_LASTNAME),
-            externalTask.getVariable(ProcInstVars.CUSTOMER_NOTIFICATION_EMAIL),
-            externalTask.getVariable(ProcInstVars.POLICY_NUMBER),
-            externalTask.getVariable(ProcInstVars.CLAIM_TYPE));
-
-    // Validate using Bean Validation
-    final Set<ConstraintViolation<ClaimRejectionRequest>> violations = validator.validate(request);
-
-    if (!violations.isEmpty()) {
-      final StringBuilder errorMessage = new StringBuilder("Validation failed: ");
-      violations.forEach(
-          violation ->
-              errorMessage
-                  .append(violation.getPropertyPath())
-                  .append(" ")
-                  .append(violation.getMessage())
-                  .append("; "));
-
-      throw new IllegalArgumentException(errorMessage.toString());
-    }
-
-    return request;
-  }
-
-  /**
-   * Sends a rejection notification email to the customer.
-   *
-   * @param notificationEmail email address to send the notification to
-   * @param notificationMessage the formatted notification message to send
-   * @return true if notification was sent successfully, false otherwise
-   */
-  private boolean sendRejectionNotification(String notificationEmail, String notificationMessage) {
-
-    log.debug("Sending rejection notification to customer: {}", notificationEmail);
-
-    try {
-      return notificationService.sendNotificationToCustomer(notificationEmail, notificationMessage);
-    } catch (Exception ex) {
-      log.error("Failed to send notification to {}: {}", notificationEmail, ex.getMessage(), ex);
-      return false;
-    }
-  }
-
-  /**
-   * Creates a claim decision DTO representing the rejection due to invalid policy.
-   *
-   * @param claimId the ID of the claim being rejected
-   * @return a fully populated ClaimDecisionDto with rejection details
-   */
-  private ClaimDecisionDto createRejectionDecision(Long claimId) {
-    return new ClaimDecisionDto()
-        .claimId(claimId)
-        .decisionDate(OffsetDateTime.now())
-        .decisionType(DecisionTypeEnum.REJECTED)
-        .decisionMakerId(-1L) // System decision
-        .decisionMakerName("SYSTEM")
-        .approvedAmount(BigDecimal.ZERO)
-        .reasoning(DECISION_MESSAGE)
-        .rejectionReason(DECISION_MESSAGE)
-        .updatedAt(OffsetDateTime.now());
   }
 
   /**

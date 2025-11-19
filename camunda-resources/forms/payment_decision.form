@@ -61,6 +61,20 @@
           "id": "Field_1wqwqi3",
           "key": "claim_type",
           "readonly": true
+        },
+        {
+          "label": "Max Approved Amount",
+          "type": "number",
+          "layout": {
+            "row": "Row_00kcoo2",
+            "columns": null
+          },
+          "id": "Field_114qaum",
+          "key": "approved_amount",
+          "decimalDigits": 2,
+          "increment": "0.01",
+          "readonly": true,
+          "properties": {}
         }
       ],
       "showOutline": true,
@@ -72,112 +86,79 @@
       "id": "Field_019yw8h"
     },
     {
-      "label": "Invoice Review",
+      "label": "Adjuster's Assesment",
       "components": [
         {
-          "label": "Customer Invoice",
+          "label": "Adjuster Report",
           "type": "documentPreview",
           "layout": {
-            "row": "Row_0r46ihc",
+            "row": "Row_1msog14",
             "columns": null
           },
-          "id": "Field_08ggzuk",
-          "dataSource": "=customer_invoice_url",
+          "id": "Field_02hdlz1",
+          "dataSource": "=adjuster_report_url",
           "maxHeight": 50
-        },
-        {
-          "label": "Please enter the details you see on the invoice above",
-          "type": "textarea",
-          "layout": {
-            "row": "Row_1rbwnmu",
-            "columns": null
-          },
-          "id": "Field_0p510wd",
-          "key": "invoice_details"
-        },
-        {
-          "subtype": "date",
-          "dateLabel": "Invoice Date",
-          "type": "datetime",
-          "layout": {
-            "row": "Row_13tx6in",
-            "columns": null
-          },
-          "id": "Field_1dwudmd",
-          "key": "invoice_date"
-        },
-        {
-          "label": "Invoice Amount",
-          "type": "number",
-          "layout": {
-            "row": "Row_13tx6in",
-            "columns": null
-          },
-          "id": "Field_1er5m0w",
-          "key": "invoice_amount",
-          "decimalDigits": 2,
-          "increment": "0.01"
-        },
-        {
-          "label": "Invoice Provider Name",
-          "type": "textfield",
-          "layout": {
-            "row": "Row_12lpsnj",
-            "columns": null
-          },
-          "id": "Field_1ixabxu",
-          "key": "invoice_provider_name"
         }
       ],
       "showOutline": true,
       "type": "group",
       "layout": {
-        "row": "Row_10x23hx",
+        "row": "Row_0sxbvmd",
         "columns": null
       },
-      "id": "Field_1xkym83"
+      "id": "Field_046acdl"
     },
     {
-      "label": "Provider Verification",
+      "label": "Payment Authorization",
       "components": [
         {
-          "label": "Is this a partnered provider?",
+          "label": "Decision Type",
           "values": [
             {
-              "label": "Yes",
-              "value": "true"
+              "label": "Approve",
+              "value": "approve"
             },
             {
-              "label": "No",
-              "value": "false"
+              "label": "Reject",
+              "value": "reject"
             }
           ],
           "type": "radio",
           "layout": {
-            "row": "Row_0ny8yr0",
+            "row": "Row_04zpypn",
             "columns": null
           },
-          "id": "Field_0u8jthg",
-          "key": "is_partnered_provider"
+          "id": "Field_1sc35jv",
+          "key": "decision_type"
+        },
+        {
+          "label": "Desicion Notes / Justification",
+          "type": "textarea",
+          "layout": {
+            "row": "Row_14mlg72",
+            "columns": null
+          },
+          "id": "Field_1cpkdm3",
+          "key": "decision_notes"
         }
       ],
       "showOutline": true,
       "type": "group",
       "layout": {
-        "row": "Row_14umm7v",
+        "row": "Row_1y6v6w1",
         "columns": null
       },
-      "id": "Field_1yxlnk3"
+      "id": "Field_0i7eo8p"
     },
     {
       "label": "Save",
       "action": "submit",
       "type": "button",
       "layout": {
-        "row": "Row_1pgokyq",
+        "row": "Row_14iocfo",
         "columns": null
       },
-      "id": "Field_16292k3"
+      "id": "Field_0ecllvv"
     }
   ],
   "type": "default",
