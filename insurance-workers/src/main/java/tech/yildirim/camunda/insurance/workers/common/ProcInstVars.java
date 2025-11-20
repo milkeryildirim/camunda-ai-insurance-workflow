@@ -1,7 +1,11 @@
 package tech.yildirim.camunda.insurance.workers.common;
 
 public interface ProcInstVars {
+  String ADJUSTER_ASSIGNED_NOTIFICATION_SENT_SUCCESSFULLY =
+      "adjuster_assigned_notification_sent_successfully";
+  String ADJUSTER_ASSIGNED_NOTIFICATION_MESSAGE = "adjuster_assigned_notification_message";
   String ADJUSTER_ID = "adjuster_id";
+  String ADJUSTER_NAME = "adjuster_name";
   String ADJUSTER_REPORT_URL = "adjuster_report_url";
   String APPROVED_AMOUNT = "approved_amount";
   String CLAIM_FILE_NUMBER = "claim_file_number";

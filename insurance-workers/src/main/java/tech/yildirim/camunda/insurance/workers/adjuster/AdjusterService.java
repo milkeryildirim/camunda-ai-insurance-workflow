@@ -50,7 +50,7 @@ public class AdjusterService {
    *   <li>Queries the employees API for available external adjusters with matching specialization
    *   <li>Selects the first available adjuster from the pool
    *   <li>Assigns the selected adjuster to the claim via the claim service
-   *   <li>Returns the updated claim with the adjuster assignment
+   *   <li>Returns the assigned adjuster employee data transfer object
    * </ol>
    *
    * <p>If no adjusters are available for the specified claim type or if the assignment fails, this
@@ -59,12 +59,12 @@ public class AdjusterService {
    * @param claimType the type of claim requiring adjuster assignment (must not be null)
    * @param claimId the unique identifier of the claim to assign an adjuster to (must not be null or
    *     negative)
-   * @return the updated claim data transfer object with adjuster assignment, or null if no adjuster
+   * @return the assigned adjuster employee data transfer object, or null if no adjuster
    *     is available or assignment fails
    * @throws IllegalArgumentException when {@code claimType} is null or {@code claimId} is null or
    *     negative
    */
-  public ClaimDto assignAdjuster(ClaimType claimType, Long claimId) {
+  public EmployeeDto assignAdjuster(ClaimType claimType, Long claimId) {
     if (claimType == null) {
       throw new IllegalArgumentException("Claim type cannot be null");
     }
@@ -107,15 +107,15 @@ public class AdjusterService {
             selectedAdjuster.getId(),
             claimType,
             claimId);
+        return selectedAdjuster;
       } else {
         log.warn(
             "Failed to assign adjuster {} to {} claim {}",
             selectedAdjuster.getId(),
             claimType,
             claimId);
+        return null;
       }
-
-      return assignedClaim;
 
     } catch (Exception ex) {
       log.error(

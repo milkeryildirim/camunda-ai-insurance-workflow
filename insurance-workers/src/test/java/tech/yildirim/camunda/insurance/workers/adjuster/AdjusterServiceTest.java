@@ -25,7 +25,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import tech.yildirim.aiinsurance.api.generated.clients.EmployeesApiClient;
 import tech.yildirim.aiinsurance.api.generated.model.AutoClaimDto;
-import tech.yildirim.aiinsurance.api.generated.model.ClaimDto;
 import tech.yildirim.aiinsurance.api.generated.model.EmployeeDto;
 import tech.yildirim.aiinsurance.api.generated.model.EmployeeDto.EmploymentTypeEnum;
 import tech.yildirim.aiinsurance.api.generated.model.EmployeeDto.SpecializationAreaEnum;
@@ -39,6 +38,9 @@ import tech.yildirim.camunda.insurance.workers.claim.ClaimType;
  *
  * <p>Tests cover all scenarios including successful adjuster assignment, error handling for
  * different claim types, edge cases with null/invalid inputs, and API unavailability scenarios.
+ *
+ * <p>The AdjusterService.assignAdjuster method now returns EmployeeDto (the assigned adjuster)
+ * instead of ClaimDto, so all tests validate the returned adjuster information.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdjusterService Tests")
@@ -79,11 +81,12 @@ class AdjusterServiceTest {
       when(claimService.assignAdjusterToAutoClaim(claimId)).thenReturn(assignedClaim);
 
       // When
-      ClaimDto result = adjusterService.assignAdjuster(claimType, claimId);
+      EmployeeDto result = adjusterService.assignAdjuster(claimType, claimId);
 
       // Then
       assertThat(result).isNotNull();
-      assertThat(result.getId()).isEqualTo(claimId);
+      assertThat(result.getId()).isEqualTo(adjuster.getId());
+      assertThat(result.getSpecializationArea()).isEqualTo(SpecializationAreaEnum.AUTO);
       verify(employeesApiClient)
           .getAvailableAdjustersBySpecialization(
               ClaimType.AUTO.name(), EmploymentTypeEnum.EXTERNAL.getValue());
@@ -102,7 +105,7 @@ class AdjusterServiceTest {
           .thenReturn(new ResponseEntity<>(Collections.emptyList(), HttpStatus.OK));
 
       // When
-      ClaimDto result = adjusterService.assignAdjuster(claimType, claimId);
+      EmployeeDto result = adjusterService.assignAdjuster(claimType, claimId);
 
       // Then
       assertThat(result).isNull();
@@ -124,7 +127,7 @@ class AdjusterServiceTest {
           .thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
 
       // When
-      ClaimDto result = adjusterService.assignAdjuster(claimType, claimId);
+      EmployeeDto result = adjusterService.assignAdjuster(claimType, claimId);
 
       // Then
       assertThat(result).isNull();
@@ -146,7 +149,7 @@ class AdjusterServiceTest {
       when(claimService.assignAdjusterToAutoClaim(claimId)).thenReturn(null);
 
       // When
-      ClaimDto result = adjusterService.assignAdjuster(claimType, claimId);
+      EmployeeDto result = adjusterService.assignAdjuster(claimType, claimId);
 
       // Then
       assertThat(result).isNull();
@@ -174,11 +177,12 @@ class AdjusterServiceTest {
       when(claimService.assignAdjusterToHealthClaim(claimId)).thenReturn(assignedClaim);
 
       // When
-      ClaimDto result = adjusterService.assignAdjuster(claimType, claimId);
+      EmployeeDto result = adjusterService.assignAdjuster(claimType, claimId);
 
       // Then
       assertThat(result).isNotNull();
-      assertThat(result.getId()).isEqualTo(claimId);
+      assertThat(result.getId()).isEqualTo(adjuster.getId());
+      assertThat(result.getSpecializationArea()).isEqualTo(SpecializationAreaEnum.HEALTH);
       verify(employeesApiClient)
           .getAvailableAdjustersBySpecialization(
               ClaimType.HEALTH.name(), EmploymentTypeEnum.EXTERNAL.getValue());
@@ -197,7 +201,7 @@ class AdjusterServiceTest {
           .thenReturn(new ResponseEntity<>(Collections.emptyList(), HttpStatus.OK));
 
       // When
-      ClaimDto result = adjusterService.assignAdjuster(claimType, claimId);
+      EmployeeDto result = adjusterService.assignAdjuster(claimType, claimId);
 
       // Then
       assertThat(result).isNull();
@@ -225,11 +229,12 @@ class AdjusterServiceTest {
       when(claimService.assignAdjusterToHomeClaim(claimId)).thenReturn(assignedClaim);
 
       // When
-      ClaimDto result = adjusterService.assignAdjuster(claimType, claimId);
+      EmployeeDto result = adjusterService.assignAdjuster(claimType, claimId);
 
       // Then
       assertThat(result).isNotNull();
-      assertThat(result.getId()).isEqualTo(claimId);
+      assertThat(result.getId()).isEqualTo(adjuster.getId());
+      assertThat(result.getSpecializationArea()).isEqualTo(SpecializationAreaEnum.HOME);
       verify(employeesApiClient)
           .getAvailableAdjustersBySpecialization(
               ClaimType.HOME.name(), EmploymentTypeEnum.EXTERNAL.getValue());
@@ -248,7 +253,7 @@ class AdjusterServiceTest {
           .thenReturn(new ResponseEntity<>(Collections.emptyList(), HttpStatus.OK));
 
       // When
-      ClaimDto result = adjusterService.assignAdjuster(claimType, claimId);
+      EmployeeDto result = adjusterService.assignAdjuster(claimType, claimId);
 
       // Then
       assertThat(result).isNull();
@@ -318,7 +323,7 @@ class AdjusterServiceTest {
       when(employeesApiClientProvider.getIfAvailable()).thenReturn(null);
 
       // When
-      ClaimDto result = adjusterService.assignAdjuster(claimType, claimId);
+      EmployeeDto result = adjusterService.assignAdjuster(claimType, claimId);
 
       // Then
       assertThat(result).isNull();
@@ -337,7 +342,7 @@ class AdjusterServiceTest {
           .thenThrow(new RuntimeException("API connection failed"));
 
       // When
-      ClaimDto result = adjusterService.assignAdjuster(claimType, claimId);
+      EmployeeDto result = adjusterService.assignAdjuster(claimType, claimId);
 
       // Then
       assertThat(result).isNull();
@@ -363,7 +368,7 @@ class AdjusterServiceTest {
           .thenThrow(new RuntimeException("Claim service error"));
 
       // When
-      ClaimDto result = adjusterService.assignAdjuster(claimType, claimId);
+      EmployeeDto result = adjusterService.assignAdjuster(claimType, claimId);
 
       // Then
       assertThat(result).isNull();
@@ -393,10 +398,11 @@ class AdjusterServiceTest {
       when(claimService.assignAdjusterToAutoClaim(claimId)).thenReturn(assignedClaim);
 
       // When
-      ClaimDto result = adjusterService.assignAdjuster(claimType, claimId);
+      EmployeeDto result = adjusterService.assignAdjuster(claimType, claimId);
 
       // Then
       assertThat(result).isNotNull();
+      assertThat(result.getId()).isEqualTo(adjuster1.getId()); // Should be the first adjuster
       verify(claimService).assignAdjusterToAutoClaim(claimId);
     }
   }
@@ -440,17 +446,20 @@ class AdjusterServiceTest {
       when(claimService.assignAdjusterToHomeClaim(homeClaimId)).thenReturn(homeClaim);
 
       // When & Then
-      ClaimDto autoResult = adjusterService.assignAdjuster(ClaimType.AUTO, autoClaimId);
+      EmployeeDto autoResult = adjusterService.assignAdjuster(ClaimType.AUTO, autoClaimId);
       assertThat(autoResult).isNotNull();
-      assertThat(autoResult.getId()).isEqualTo(autoClaimId);
+      assertThat(autoResult.getId()).isEqualTo(autoAdjuster.getId());
+      assertThat(autoResult.getSpecializationArea()).isEqualTo(SpecializationAreaEnum.AUTO);
 
-      ClaimDto healthResult = adjusterService.assignAdjuster(ClaimType.HEALTH, healthClaimId);
+      EmployeeDto healthResult = adjusterService.assignAdjuster(ClaimType.HEALTH, healthClaimId);
       assertThat(healthResult).isNotNull();
-      assertThat(healthResult.getId()).isEqualTo(healthClaimId);
+      assertThat(healthResult.getId()).isEqualTo(healthAdjuster.getId());
+      assertThat(healthResult.getSpecializationArea()).isEqualTo(SpecializationAreaEnum.HEALTH);
 
-      ClaimDto homeResult = adjusterService.assignAdjuster(ClaimType.HOME, homeClaimId);
+      EmployeeDto homeResult = adjusterService.assignAdjuster(ClaimType.HOME, homeClaimId);
       assertThat(homeResult).isNotNull();
-      assertThat(homeResult.getId()).isEqualTo(homeClaimId);
+      assertThat(homeResult.getId()).isEqualTo(homeAdjuster.getId());
+      assertThat(homeResult.getSpecializationArea()).isEqualTo(SpecializationAreaEnum.HOME);
 
       verify(claimService).assignAdjusterToAutoClaim(autoClaimId);
       verify(claimService).assignAdjusterToHealthClaim(healthClaimId);

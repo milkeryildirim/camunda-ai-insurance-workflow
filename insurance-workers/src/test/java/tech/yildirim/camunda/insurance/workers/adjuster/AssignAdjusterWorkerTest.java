@@ -22,10 +22,31 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import tech.yildirim.aiinsurance.api.generated.model.ClaimDto;
+import tech.yildirim.aiinsurance.api.generated.model.EmployeeDto;
 import tech.yildirim.camunda.insurance.workers.claim.ClaimType;
 import tech.yildirim.camunda.insurance.workers.common.ProcInstVars;
 
+/**
+ * Unit tests for {@link AssignAdjusterWorker}.
+ *
+ * <p>This test class validates the external task worker responsible for assigning adjusters to
+ * insurance claims. The worker receives claim ID and claim type from process variables, delegates
+ * the assignment to {@link AdjusterService}, and sets the assigned adjuster ID as a process
+ * variable for the BPMN workflow.
+ *
+ * <p>Tests cover:
+ * <ul>
+ *   <li>Topic name verification
+ *   <li>Happy path scenarios with different claim types
+ *   <li>Input validation and error handling
+ *   <li>Service response validation for EmployeeDto
+ *   <li>Process variable extraction and setting
+ *   <li>Edge cases and error scenarios
+ * </ul>
+ *
+ * The worker now expects {@link EmployeeDto} from the service instead of ClaimDto,
+ * which represents the assigned adjuster information.
+ */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AssignAdjusterWorker Tests")
 class AssignAdjusterWorkerTest {
@@ -73,14 +94,15 @@ class AssignAdjusterWorkerTest {
       // Given
       ClaimType claimType = ClaimType.valueOf(claimTypeString);
 
-      ClaimDto mockClaimDto = new ClaimDto();
-      mockClaimDto.setId(claimId);
-      mockClaimDto.setAssignedAdjusterId(expectedAdjusterId);
+      EmployeeDto mockEmployeeDto = new EmployeeDto();
+      mockEmployeeDto.setId(expectedAdjusterId);
+      mockEmployeeDto.setFirstName("John");
+      mockEmployeeDto.setLastName("Doe");
 
       when(externalTask.getVariable(ProcInstVars.CLAIM_ID)).thenReturn(claimId);
       when(externalTask.getVariable(ProcInstVars.CLAIM_TYPE)).thenReturn(claimTypeString);
       when(adjusterService.assignAdjuster(claimType, claimId))
-          .thenReturn(mockClaimDto);
+          .thenReturn(mockEmployeeDto);
 
       // When
       worker.executeBusinessLogic(externalTask, externalTaskService);
@@ -101,14 +123,15 @@ class AssignAdjusterWorkerTest {
       String claimType = "auto"; // lowercase
       Long expectedAdjusterId = 666L;
 
-      ClaimDto mockClaimDto = new ClaimDto();
-      mockClaimDto.setId(claimId);
-      mockClaimDto.setAssignedAdjusterId(expectedAdjusterId);
+      EmployeeDto mockEmployeeDto = new EmployeeDto();
+      mockEmployeeDto.setId(expectedAdjusterId);
+      mockEmployeeDto.setFirstName("Jane");
+      mockEmployeeDto.setLastName("Smith");
 
       when(externalTask.getVariable(ProcInstVars.CLAIM_ID)).thenReturn(claimId);
       when(externalTask.getVariable(ProcInstVars.CLAIM_TYPE)).thenReturn(claimType);
       when(adjusterService.assignAdjuster(ClaimType.AUTO, claimId))
-          .thenReturn(mockClaimDto);
+          .thenReturn(mockEmployeeDto);
 
       // When
       worker.executeBusinessLogic(externalTask, externalTaskService);
@@ -129,14 +152,15 @@ class AssignAdjusterWorkerTest {
       String claimType = "HoMe"; // mixed case
       Long expectedAdjusterId = 888L;
 
-      ClaimDto mockClaimDto = new ClaimDto();
-      mockClaimDto.setId(claimId);
-      mockClaimDto.setAssignedAdjusterId(expectedAdjusterId);
+      EmployeeDto mockEmployeeDto = new EmployeeDto();
+      mockEmployeeDto.setId(expectedAdjusterId);
+      mockEmployeeDto.setFirstName("Bob");
+      mockEmployeeDto.setLastName("Wilson");
 
       when(externalTask.getVariable(ProcInstVars.CLAIM_ID)).thenReturn(claimId);
       when(externalTask.getVariable(ProcInstVars.CLAIM_TYPE)).thenReturn(claimType);
       when(adjusterService.assignAdjuster(ClaimType.HOME, claimId))
-          .thenReturn(mockClaimDto);
+          .thenReturn(mockEmployeeDto);
 
       // When
       worker.executeBusinessLogic(externalTask, externalTaskService);
@@ -215,8 +239,8 @@ class AssignAdjusterWorkerTest {
   class ServiceResponseValidationTests {
 
     @Test
-    @DisplayName("Should throw exception when service returns null ClaimDto")
-    void shouldThrowExceptionWhenServiceReturnsNullClaimDto() {
+    @DisplayName("Should throw exception when service returns null EmployeeDto")
+    void shouldThrowExceptionWhenServiceReturnsNullEmployeeDto() {
       // Given
       Long claimId = 123L;
       String claimType = "AUTO";
@@ -232,20 +256,19 @@ class AssignAdjusterWorkerTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when ClaimDto has null adjuster ID")
-    void shouldThrowExceptionWhenClaimDtoHasNullAdjusterId() {
+    @DisplayName("Should throw exception when EmployeeDto has null ID")
+    void shouldThrowExceptionWhenEmployeeDtoHasNullId() {
       // Given
       Long claimId = 123L;
       String claimType = "AUTO";
 
-      ClaimDto mockClaimDto = new ClaimDto();
-      mockClaimDto.setId(claimId);
-      mockClaimDto.setAssignedAdjusterId(null); // null adjuster ID
+      EmployeeDto mockEmployeeDto = new EmployeeDto();
+      mockEmployeeDto.setId(null); // null adjuster ID
 
       when(externalTask.getVariable(ProcInstVars.CLAIM_ID)).thenReturn(claimId);
       when(externalTask.getVariable(ProcInstVars.CLAIM_TYPE)).thenReturn(claimType);
       when(adjusterService.assignAdjuster(ClaimType.AUTO, claimId))
-          .thenReturn(mockClaimDto);
+          .thenReturn(mockEmployeeDto);
 
       // When & Then
       assertThatThrownBy(() -> worker.executeBusinessLogic(externalTask, externalTaskService))
@@ -261,14 +284,15 @@ class AssignAdjusterWorkerTest {
       String claimType = "AUTO";
       Long adjusterIdZero = 0L;
 
-      ClaimDto mockClaimDto = new ClaimDto();
-      mockClaimDto.setId(claimId);
-      mockClaimDto.setAssignedAdjusterId(adjusterIdZero);
+      EmployeeDto mockEmployeeDto = new EmployeeDto();
+      mockEmployeeDto.setId(adjusterIdZero);
+      mockEmployeeDto.setFirstName("Zero");
+      mockEmployeeDto.setLastName("Adjuster");
 
       when(externalTask.getVariable(ProcInstVars.CLAIM_ID)).thenReturn(claimId);
       when(externalTask.getVariable(ProcInstVars.CLAIM_TYPE)).thenReturn(claimType);
       when(adjusterService.assignAdjuster(ClaimType.AUTO, claimId))
-          .thenReturn(mockClaimDto);
+          .thenReturn(mockEmployeeDto);
 
       // When
       worker.executeBusinessLogic(externalTask, externalTaskService);
@@ -352,14 +376,15 @@ class AssignAdjusterWorkerTest {
       String claimType = "AUTO";
       Long expectedAdjusterId = 67890L;
 
-      ClaimDto mockClaimDto = new ClaimDto();
-      mockClaimDto.setId(claimId);
-      mockClaimDto.setAssignedAdjusterId(expectedAdjusterId);
+      EmployeeDto mockEmployeeDto = new EmployeeDto();
+      mockEmployeeDto.setId(expectedAdjusterId);
+      mockEmployeeDto.setFirstName("Test");
+      mockEmployeeDto.setLastName("User");
 
       when(externalTask.getVariable(ProcInstVars.CLAIM_ID)).thenReturn(claimId);
       when(externalTask.getVariable(ProcInstVars.CLAIM_TYPE)).thenReturn(claimType);
       when(adjusterService.assignAdjuster(ClaimType.AUTO, claimId))
-          .thenReturn(mockClaimDto);
+          .thenReturn(mockEmployeeDto);
 
       // When
       worker.executeBusinessLogic(externalTask, externalTaskService);
@@ -377,14 +402,15 @@ class AssignAdjusterWorkerTest {
       String claimType = "HOME";
       Long expectedAdjusterId = 456L;
 
-      ClaimDto mockClaimDto = new ClaimDto();
-      mockClaimDto.setId(claimId);
-      mockClaimDto.setAssignedAdjusterId(expectedAdjusterId);
+      EmployeeDto mockEmployeeDto = new EmployeeDto();
+      mockEmployeeDto.setId(expectedAdjusterId);
+      mockEmployeeDto.setFirstName("Home");
+      mockEmployeeDto.setLastName("Adjuster");
 
       when(externalTask.getVariable(ProcInstVars.CLAIM_ID)).thenReturn(claimId);
       when(externalTask.getVariable(ProcInstVars.CLAIM_TYPE)).thenReturn(claimType);
       when(adjusterService.assignAdjuster(ClaimType.HOME, claimId))
-          .thenReturn(mockClaimDto);
+          .thenReturn(mockEmployeeDto);
 
       // When
       worker.executeBusinessLogic(externalTask, externalTaskService);
@@ -402,14 +428,15 @@ class AssignAdjusterWorkerTest {
       String claimType = "AUTO";
       Long expectedAdjusterId = 111L;
 
-      ClaimDto mockClaimDto = new ClaimDto();
-      mockClaimDto.setId(claimId);
-      mockClaimDto.setAssignedAdjusterId(expectedAdjusterId);
+      EmployeeDto mockEmployeeDto = new EmployeeDto();
+      mockEmployeeDto.setId(expectedAdjusterId);
+      mockEmployeeDto.setFirstName("John");
+      mockEmployeeDto.setLastName("Smith");
 
       when(externalTask.getVariable(ProcInstVars.CLAIM_ID)).thenReturn(claimId);
       when(externalTask.getVariable(ProcInstVars.CLAIM_TYPE)).thenReturn(claimType);
       when(adjusterService.assignAdjuster(ClaimType.AUTO, claimId))
-          .thenReturn(mockClaimDto);
+          .thenReturn(mockEmployeeDto);
 
       // When
       worker.executeBusinessLogic(externalTask, externalTaskService);
@@ -419,8 +446,9 @@ class AssignAdjusterWorkerTest {
 
       Map<String, Object> variables = variablesCaptor.getValue();
       assertThat(variables)
-          .containsOnlyKeys(ProcInstVars.ADJUSTER_ID)
-          .containsEntry(ProcInstVars.ADJUSTER_ID, expectedAdjusterId);
+          .containsOnlyKeys(ProcInstVars.ADJUSTER_ID, ProcInstVars.ADJUSTER_NAME)
+          .containsEntry(ProcInstVars.ADJUSTER_ID, expectedAdjusterId)
+          .containsEntry(ProcInstVars.ADJUSTER_NAME, "John Smith");
     }
 
     @Test
@@ -431,14 +459,15 @@ class AssignAdjusterWorkerTest {
       String claimType = "AUTO";
       Long adjusterIdValue = 123L;
 
-      ClaimDto mockClaimDto = new ClaimDto();
-      mockClaimDto.setId(largeClaimId);
-      mockClaimDto.setAssignedAdjusterId(adjusterIdValue);
+      EmployeeDto mockEmployeeDto = new EmployeeDto();
+      mockEmployeeDto.setId(adjusterIdValue);
+      mockEmployeeDto.setFirstName("Large");
+      mockEmployeeDto.setLastName("Claim");
 
       when(externalTask.getVariable(ProcInstVars.CLAIM_ID)).thenReturn(largeClaimId);
       when(externalTask.getVariable(ProcInstVars.CLAIM_TYPE)).thenReturn(claimType);
       when(adjusterService.assignAdjuster(ClaimType.AUTO, largeClaimId))
-          .thenReturn(mockClaimDto);
+          .thenReturn(mockEmployeeDto);
 
       // When
       worker.executeBusinessLogic(externalTask, externalTaskService);
@@ -459,14 +488,15 @@ class AssignAdjusterWorkerTest {
       String claimType = "AUTO";
       Long largeAdjusterId = Long.MAX_VALUE;
 
-      ClaimDto mockClaimDto = new ClaimDto();
-      mockClaimDto.setId(claimId);
-      mockClaimDto.setAssignedAdjusterId(largeAdjusterId);
+      EmployeeDto mockEmployeeDto = new EmployeeDto();
+      mockEmployeeDto.setId(largeAdjusterId);
+      mockEmployeeDto.setFirstName("Large");
+      mockEmployeeDto.setLastName("Adjuster");
 
       when(externalTask.getVariable(ProcInstVars.CLAIM_ID)).thenReturn(claimId);
       when(externalTask.getVariable(ProcInstVars.CLAIM_TYPE)).thenReturn(claimType);
       when(adjusterService.assignAdjuster(ClaimType.AUTO, claimId))
-          .thenReturn(mockClaimDto);
+          .thenReturn(mockEmployeeDto);
 
       // When
       worker.executeBusinessLogic(externalTask, externalTaskService);
@@ -488,42 +518,45 @@ class AssignAdjusterWorkerTest {
     void shouldProcessMultipleClaimTypesSequentially() {
       // Test AUTO
       Long autoClaimId = 1L;
-      ClaimDto autoClaimDto = new ClaimDto();
-      autoClaimDto.setId(autoClaimId);
-      autoClaimDto.setAssignedAdjusterId(100L);
+      EmployeeDto autoEmployeeDto = new EmployeeDto();
+      autoEmployeeDto.setId(100L);
+      autoEmployeeDto.setFirstName("Auto");
+      autoEmployeeDto.setLastName("Adjuster");
 
       when(externalTask.getVariable(ProcInstVars.CLAIM_ID)).thenReturn(autoClaimId);
       when(externalTask.getVariable(ProcInstVars.CLAIM_TYPE)).thenReturn("AUTO");
       when(adjusterService.assignAdjuster(ClaimType.AUTO, autoClaimId))
-          .thenReturn(autoClaimDto);
+          .thenReturn(autoEmployeeDto);
 
       worker.executeBusinessLogic(externalTask, externalTaskService);
       verify(adjusterService).assignAdjuster(ClaimType.AUTO, autoClaimId);
 
       // Test HOME
       Long homeClaimId = 2L;
-      ClaimDto homeClaimDto = new ClaimDto();
-      homeClaimDto.setId(homeClaimId);
-      homeClaimDto.setAssignedAdjusterId(200L);
+      EmployeeDto homeEmployeeDto = new EmployeeDto();
+      homeEmployeeDto.setId(200L);
+      homeEmployeeDto.setFirstName("Home");
+      homeEmployeeDto.setLastName("Adjuster");
 
       when(externalTask.getVariable(ProcInstVars.CLAIM_ID)).thenReturn(homeClaimId);
       when(externalTask.getVariable(ProcInstVars.CLAIM_TYPE)).thenReturn("HOME");
       when(adjusterService.assignAdjuster(ClaimType.HOME, homeClaimId))
-          .thenReturn(homeClaimDto);
+          .thenReturn(homeEmployeeDto);
 
       worker.executeBusinessLogic(externalTask, externalTaskService);
       verify(adjusterService).assignAdjuster(ClaimType.HOME, homeClaimId);
 
       // Test HEALTH
       Long healthClaimId = 3L;
-      ClaimDto healthClaimDto = new ClaimDto();
-      healthClaimDto.setId(healthClaimId);
-      healthClaimDto.setAssignedAdjusterId(300L);
+      EmployeeDto healthEmployeeDto = new EmployeeDto();
+      healthEmployeeDto.setId(300L);
+      healthEmployeeDto.setFirstName("Health");
+      healthEmployeeDto.setLastName("Adjuster");
 
       when(externalTask.getVariable(ProcInstVars.CLAIM_ID)).thenReturn(healthClaimId);
       when(externalTask.getVariable(ProcInstVars.CLAIM_TYPE)).thenReturn("HEALTH");
       when(adjusterService.assignAdjuster(ClaimType.HEALTH, healthClaimId))
-          .thenReturn(healthClaimDto);
+          .thenReturn(healthEmployeeDto);
 
       worker.executeBusinessLogic(externalTask, externalTaskService);
       verify(adjusterService).assignAdjuster(ClaimType.HEALTH, healthClaimId);
@@ -538,13 +571,15 @@ class AssignAdjusterWorkerTest {
       Long firstAdjusterId = 456L;
       Long secondAdjusterId = 789L;
 
-      ClaimDto firstAssignment = new ClaimDto();
-      firstAssignment.setId(claimId);
-      firstAssignment.setAssignedAdjusterId(firstAdjusterId);
+      EmployeeDto firstAssignment = new EmployeeDto();
+      firstAssignment.setId(firstAdjusterId);
+      firstAssignment.setFirstName("First");
+      firstAssignment.setLastName("Adjuster");
 
-      ClaimDto secondAssignment = new ClaimDto();
-      secondAssignment.setId(claimId);
-      secondAssignment.setAssignedAdjusterId(secondAdjusterId);
+      EmployeeDto secondAssignment = new EmployeeDto();
+      secondAssignment.setId(secondAdjusterId);
+      secondAssignment.setFirstName("Second");
+      secondAssignment.setLastName("Adjuster");
 
       when(externalTask.getVariable(ProcInstVars.CLAIM_ID)).thenReturn(claimId);
       when(externalTask.getVariable(ProcInstVars.CLAIM_TYPE)).thenReturn(claimType);

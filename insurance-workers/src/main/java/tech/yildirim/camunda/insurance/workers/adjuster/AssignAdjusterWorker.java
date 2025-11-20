@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.client.task.ExternalTask;
 import org.camunda.bpm.client.task.ExternalTaskService;
 import org.springframework.stereotype.Component;
-import tech.yildirim.aiinsurance.api.generated.model.ClaimDto;
+import tech.yildirim.aiinsurance.api.generated.model.EmployeeDto;
 import tech.yildirim.camunda.insurance.workers.claim.ClaimType;
 import tech.yildirim.camunda.insurance.workers.common.AbstractCamundaWorker;
 import tech.yildirim.camunda.insurance.workers.common.ProcInstVars;
@@ -15,8 +15,9 @@ import tech.yildirim.camunda.insurance.workers.common.ProcInstVars;
  * External task worker responsible for assigning an adjuster to a claim.
  *
  * <p>This worker subscribes to the {@link #TOPIC_NAME} external task topic and delegates the actual
- * assignment logic to {@link AdjusterService}. The assigned adjuster id is written back to the
- * process instance using the process variable name defined in {@link ProcInstVars}.
+ * assignment logic to {@link AdjusterService}. The assigned adjuster information is retrieved from
+ * the service response and the adjuster id is written back to the process instance using the
+ * process variable name defined in {@link ProcInstVars}.
  */
 @Component
 @Slf4j
@@ -65,11 +66,12 @@ public class AssignAdjusterWorker extends AbstractCamundaWorker {
     }
 
     // Delegate assignment to service
-    ClaimDto claimDto = adjusterService.assignAdjuster(claimType, claimId);
+    EmployeeDto assignedAdjuster = adjusterService.assignAdjuster(claimType, claimId);
 
     // Validate service response
-    if (claimDto == null || claimDto.getAssignedAdjusterId() == null) {
-      log.error("Adjuster assignment failed for claimId={}, response={}", claimId, claimDto);
+    if (assignedAdjuster == null || assignedAdjuster.getId() == null) {
+      log.error(
+          "Adjuster assignment failed for claimId={}, response={}", claimId, assignedAdjuster);
       throw new IllegalStateException("Adjuster assignment failed for claim: " + claimId);
     }
 
@@ -77,9 +79,13 @@ public class AssignAdjusterWorker extends AbstractCamundaWorker {
     completeTask(
         externalTask,
         externalTaskService,
-        Map.of(ProcInstVars.ADJUSTER_ID, claimDto.getAssignedAdjusterId()));
+        Map.of(
+            ProcInstVars.ADJUSTER_ID,
+            assignedAdjuster.getId(),
+            ProcInstVars.ADJUSTER_NAME,
+            String.join(" ", assignedAdjuster.getFirstName(), assignedAdjuster.getLastName())));
 
-    log.info("Assigned adjuster {} to claim {}", claimDto.getAssignedAdjusterId(), claimId);
+    log.info("Assigned adjuster {} to claim {}", assignedAdjuster.getId(), claimId);
   }
 
   /**
