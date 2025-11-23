@@ -39,8 +39,8 @@ public class Document {
 
   /** Insurance claim number this document is associated with */
   @NotBlank(message = "Claim number cannot be blank")
-  @Size(max = 100, message = "Claim number cannot exceed 100 characters")
-  @Column(name = "claim_number", nullable = false, length = 100)
+  @Size(max = 30, message = "Claim number cannot exceed 30 characters")
+  @Column(name = "claim_number", nullable = false, length = 30)
   private String claimNumber;
 
   /** Type of document stored */

@@ -29,7 +29,7 @@ public class DocumentDTO {
 
   /** Insurance claim number this document is associated with */
   @NotBlank(message = "Claim number cannot be blank")
-  @Size(max = 100, message = "Claim number cannot exceed 100 characters")
+  @Size(max = 30, message = "Claim number cannot exceed 30 characters")
   @JsonProperty("claimNumber")
   private String claimNumber;
 

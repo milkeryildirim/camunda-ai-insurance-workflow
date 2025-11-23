@@ -1,5 +1,9 @@
 package tech.yildirim.camunda.documentmanager.document;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -17,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
  * operations for insurance claims.
  */
 @Service
+@Validated
 @RequiredArgsConstructor
 @Slf4j
 public class DocumentService {
@@ -33,11 +39,11 @@ public class DocumentService {
    */
   @Transactional(readOnly = true)
   public Optional<DocumentDTO> findDocumentByClaimAndType(
-      String claimNumber, DocumentType documentType) {
+      @NotBlank(message = "Claim number cannot be blank")
+          @Size(max = 30, message = "Claim number cannot exceed 30 characters")
+          String claimNumber,
+      @NotNull(message = "Document type cannot be null") DocumentType documentType) {
     log.debug("Finding document for claim: {} and type: {}", claimNumber, documentType);
-
-    validateClaimNumber(claimNumber);
-    validateDocumentType(documentType);
 
     Optional<Document> document =
         documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType);
@@ -64,7 +70,10 @@ public class DocumentService {
    */
   @Transactional(readOnly = true)
   public Optional<FileDownloadResult> downloadFileByClaimAndType(
-      String claimNumber, DocumentType documentType) {
+      @NotBlank(message = "Claim number cannot be blank")
+          @Size(max = 30, message = "Claim number cannot exceed 30 characters")
+          String claimNumber,
+      @NotNull(message = "Document type cannot be null") DocumentType documentType) {
     log.debug("Downloading file for claim: {} and type: {}", claimNumber, documentType);
 
     // Use internal entity lookup for file operations
@@ -116,16 +125,22 @@ public class DocumentService {
    */
   @Transactional
   public DocumentDTO createDocument(
-      String claimNumber, DocumentType documentType, MultipartFile file, String uploadedBy) {
+      @NotBlank(message = "Claim number cannot be blank")
+          @Size(max = 30, message = "Claim number cannot exceed 30 characters")
+          String claimNumber,
+      @NotNull(message = "Document type cannot be null") DocumentType documentType,
+      @NotNull(message = "File cannot be null") MultipartFile file,
+      @NotBlank(message = "Uploaded by cannot be blank")
+          @Size(max = 100, message = "Uploaded by cannot exceed 100 characters")
+          String uploadedBy) {
+    // Validate file content and constraints first
+    validateFile(file);
+
     log.debug(
         "Creating new document for claim: {} and type: {}, file: {}",
         claimNumber,
         documentType,
         file.getOriginalFilename());
-
-    validateClaimNumber(claimNumber);
-    validateDocumentType(documentType);
-    validateFile(file);
 
     try {
       // Check if document already exists for this claim and type
@@ -208,10 +223,11 @@ public class DocumentService {
    * @return List of DocumentDTOs for the claim
    */
   @Transactional(readOnly = true)
-  public List<DocumentDTO> findDocumentsByClaimNumber(String claimNumber) {
+  public List<DocumentDTO> findDocumentsByClaimNumber(
+      @NotBlank(message = "Claim number cannot be blank")
+          @Size(max = 30, message = "Claim number cannot exceed 30 characters")
+          String claimNumber) {
     log.debug("Finding all documents for claim: {}", claimNumber);
-
-    validateClaimNumber(claimNumber);
 
     List<Document> documents = documentRepository.findByClaimNumber(claimNumber);
 
@@ -229,11 +245,11 @@ public class DocumentService {
    */
   @Transactional(readOnly = true)
   public List<DocumentDTO> findActiveDocumentsByClaimAndType(
-      String claimNumber, DocumentType documentType) {
+      @NotBlank(message = "Claim number cannot be blank")
+          @Size(max = 30, message = "Claim number cannot exceed 30 characters")
+          String claimNumber,
+      @NotNull(message = "Document type cannot be null") DocumentType documentType) {
     log.debug("Finding active documents for claim: {} and type: {}", claimNumber, documentType);
-
-    validateClaimNumber(claimNumber);
-    validateDocumentType(documentType);
 
     List<Document> documents =
         documentRepository.findActiveDocumentsByClaimAndType(claimNumber, documentType);
@@ -245,20 +261,6 @@ public class DocumentService {
         documentType);
 
     return documentMapper.toDTOList(documents);
-  }
-
-  /** Validates claim number parameter. */
-  private void validateClaimNumber(String claimNumber) {
-    if (claimNumber == null || claimNumber.trim().isEmpty()) {
-      throw new IllegalArgumentException("Claim number cannot be null or empty");
-    }
-  }
-
-  /** Validates document type parameter. */
-  private void validateDocumentType(DocumentType documentType) {
-    if (documentType == null) {
-      throw new IllegalArgumentException("Document type cannot be null");
-    }
   }
 
   /** Validates uploaded file. */
@@ -335,8 +337,6 @@ public class DocumentService {
    */
   private Optional<Document> findDocumentEntityByClaimAndType(
       String claimNumber, DocumentType documentType) {
-    validateClaimNumber(claimNumber);
-    validateDocumentType(documentType);
 
     return documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType);
   }
@@ -350,14 +350,11 @@ public class DocumentService {
    * @return The created DocumentDTO
    */
   @Transactional
-  public DocumentDTO createDocumentFromDTO(DocumentDTO documentDTO) {
+  public DocumentDTO createDocumentFromDTO(@Valid DocumentDTO documentDTO) {
     log.info(
         "Creating document from DTO for claim: {} and type: {}",
         documentDTO.getClaimNumber(),
         documentDTO.getDocumentType());
-
-    // Validate DTO
-    validateDocumentDTO(documentDTO);
 
     // Check for duplicate documents
     if (findDocumentByClaimAndType(documentDTO.getClaimNumber(), documentDTO.getDocumentType())
@@ -416,64 +413,6 @@ public class DocumentService {
   }
 
   // ========================== VALIDATION METHODS ==========================
-
-  /**
-   * Validates DocumentDTO for REST API operations.
-   *
-   * @param documentDTO The DocumentDTO to validate
-   * @throws IllegalArgumentException if validation fails
-   */
-  private void validateDocumentDTO(DocumentDTO documentDTO) {
-    if (documentDTO == null) {
-      throw new IllegalArgumentException("DocumentDTO cannot be null");
-    }
-
-    // Validate claim number
-    if (documentDTO.getClaimNumber() == null || documentDTO.getClaimNumber().trim().isEmpty()) {
-      throw new IllegalArgumentException("Claim number cannot be null or empty");
-    }
-
-    // Validate document type
-    if (documentDTO.getDocumentType() == null) {
-      throw new IllegalArgumentException("Document type cannot be null");
-    }
-
-    // Validate file name
-    if (documentDTO.getFileName() == null || documentDTO.getFileName().trim().isEmpty()) {
-      throw new IllegalArgumentException("File name cannot be null or empty");
-    }
-
-    // Validate file content
-    if (documentDTO.getFileContent() == null || documentDTO.getFileContent().trim().isEmpty()) {
-      throw new IllegalArgumentException("File content cannot be null or empty");
-    }
-
-    // Validate Base64 content format
-    try {
-      byte[] decodedContent = java.util.Base64.getDecoder().decode(documentDTO.getFileContent());
-
-      // Validate file size (e.g., max 10MB)
-      long maxFileSize = 10L * 1024 * 1024; // 10MB in bytes
-      if (decodedContent.length > maxFileSize) {
-        throw new IllegalArgumentException(
-            String.format(
-                "File size (%d bytes) exceeds maximum allowed size (%d bytes)",
-                decodedContent.length, maxFileSize));
-      }
-
-    } catch (IllegalArgumentException e) {
-      if (e.getMessage().contains("size")) {
-        throw e; // Re-throw size validation errors
-      }
-      throw new IllegalArgumentException("Invalid Base64 file content format: " + e.getMessage());
-    }
-
-    // Validate content type for supported formats
-    String contentType = documentDTO.getContentType();
-    if (contentType != null && !isSupportedContentType(contentType)) {
-      throw new IllegalArgumentException("Unsupported file type: " + contentType);
-    }
-  }
 
   /** Result class for file download operations. */
   @lombok.Data

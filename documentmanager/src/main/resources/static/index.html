@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Manager - Insurance Claims</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .main-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .document-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 600px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .card-header-custom {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            border: none;
+        }
+
+        .card-header-custom h1 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 1.8rem;
+        }
+
+        .card-header-custom p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .card-body-custom {
+            padding: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label-custom {
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .form-control-custom {
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .form-control-custom:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #d1d5db;
+            border-radius: 10px;
+            padding: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f9fafb;
+            color: #6b7280;
+            text-align: center;
+        }
+
+        .file-input-label:hover {
+            border-color: #4f46e5;
+            background: #f0f9ff;
+            color: #4f46e5;
+        }
+
+        .file-input-label.has-file {
+            border-color: #059669;
+            background: #ecfdf5;
+            color: #059669;
+        }
+
+        .file-info {
+            display: none;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            border: none;
+            color: white;
+            padding: 0.875rem 2rem;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 1rem;
+            width: 100%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert-custom {
+            border-radius: 10px;
+            border: none;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .alert-success-custom {
+            background: #ecfdf5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+
+        .alert-error-custom {
+            background: #fef2f2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .download-section {
+            display: none;
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: #f0f9ff;
+            border-radius: 10px;
+            border-left: 4px solid #0ea5e9;
+        }
+
+        .download-section h4 {
+            color: #0c4a6e;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .download-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #0ea5e9;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0f2fe;
+            transition: all 0.3s ease;
+        }
+
+        .download-link:hover {
+            background: #0ea5e9;
+            color: white;
+            text-decoration: none;
+            transform: translateY(-1px);
+        }
+
+        .icon {
+            font-size: 1.2rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 10px;
+            }
+
+            .card-header-custom,
+            .card-body-custom {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="document-card">
+            <div class="card-header-custom">
+                <h1><i class="fas fa-file-upload icon"></i> Document Manager</h1>
+                <p>Upload insurance claim documents securely</p>
+            </div>
+
+            <div class="card-body-custom">
+                <div id="alert-container">
+                    <div id="success-alert" class="alert-custom alert-success-custom">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Success!</strong> <span id="success-message"></span>
+                    </div>
+                    <div id="error-alert" class="alert-custom alert-error-custom">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Error!</strong> <span id="error-message"></span>
+                    </div>
+                </div>
+
+                <form id="uploadForm">
+                    <div class="form-group">
+                        <label for="claimNumber" class="form-label-custom">
+                            <i class="fas fa-hashtag"></i> Claim Number
+                        </label>
+                        <input
+                            type="text"
+                            id="claimNumber"
+                            name="claimNumber"
+                            class="form-control-custom"
+                            placeholder="Enter claim number (e.g., CLM-2024-001)"
+                            maxlength="30"
+                            required
+                        >
+                        <small class="text-muted">Maximum 30 characters</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="documentType" class="form-label-custom">
+                            <i class="fas fa-file-alt"></i> Document Type
+                        </label>
+                        <select id="documentType" name="documentType" class="form-control-custom" required>
+                            <option value="">Select document type</option>
+                            <option value="INVOICE">Invoice</option>
+                            <option value="ADJUSTER_REPORT">Adjuster Report</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label-custom">
+                            <i class="fas fa-cloud-upload-alt"></i> Select File
+                        </label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="fileInput" name="file" class="file-input" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                            <label for="fileInput" class="file-input-label" id="fileLabel">
+                                <div>
+                                    <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                                    <div>Click to select a file or drag and drop</div>
+                                    <small>Supports PDF, Images, and Documents</small>
+                                </div>
+                            </label>
+                        </div>
+                        <div id="fileInfo" class="file-info">
+                            <i class="fas fa-file"></i>
+                            <span id="fileName"></span>
+                            <span id="fileSize"></span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        <div class="spinner" id="spinner"></div>
+                        <i class="fas fa-upload" id="uploadIcon"></i>
+                        <span id="buttonText">Upload Document</span>
+                    </button>
+                </form>
+
+                <div id="downloadSection" class="download-section">
+                    <h4><i class="fas fa-download"></i> Download Your Document</h4>
+                    <p>Your document has been uploaded successfully! You can download it using the link below:</p>
+                    <a href="#" id="downloadLink" class="download-link">
+                        <i class="fas fa-file-download"></i>
+                        <span>Download Document</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        class DocumentUploader {
+            constructor() {
+                this.form = document.getElementById('uploadForm');
+                this.fileInput = document.getElementById('fileInput');
+                this.fileLabel = document.getElementById('fileLabel');
+                this.fileInfo = document.getElementById('fileInfo');
+                this.fileName = document.getElementById('fileName');
+                this.fileSize = document.getElementById('fileSize');
+                this.submitBtn = document.getElementById('submitBtn');
+                this.spinner = document.getElementById('spinner');
+                this.uploadIcon = document.getElementById('uploadIcon');
+                this.buttonText = document.getElementById('buttonText');
+                this.successAlert = document.getElementById('success-alert');
+                this.errorAlert = document.getElementById('error-alert');
+                this.successMessage = document.getElementById('success-message');
+                this.errorMessage = document.getElementById('error-message');
+                this.downloadSection = document.getElementById('downloadSection');
+                this.downloadLink = document.getElementById('downloadLink');
+
+                this.initEventListeners();
+            }
+
+            initEventListeners() {
+                this.fileInput.addEventListener('change', this.handleFileSelect.bind(this));
+                this.form.addEventListener('submit', this.handleSubmit.bind(this));
+
+                // Drag and drop functionality
+                this.fileLabel.addEventListener('dragover', this.handleDragOver.bind(this));
+                this.fileLabel.addEventListener('dragleave', this.handleDragLeave.bind(this));
+                this.fileLabel.addEventListener('drop', this.handleDrop.bind(this));
+            }
+
+            handleFileSelect(event) {
+                const file = event.target.files[0];
+                this.updateFileDisplay(file);
+            }
+
+            handleDragOver(event) {
+                event.preventDefault();
+                this.fileLabel.style.borderColor = '#4f46e5';
+                this.fileLabel.style.background = '#f0f9ff';
+            }
+
+            handleDragLeave(event) {
+                event.preventDefault();
+                this.fileLabel.style.borderColor = '#d1d5db';
+                this.fileLabel.style.background = '#f9fafb';
+            }
+
+            handleDrop(event) {
+                event.preventDefault();
+                this.fileLabel.style.borderColor = '#d1d5db';
+                this.fileLabel.style.background = '#f9fafb';
+
+                const files = event.dataTransfer.files;
+                if (files.length > 0) {
+                    this.fileInput.files = files;
+                    this.updateFileDisplay(files[0]);
+                }
+            }
+
+            updateFileDisplay(file) {
+                if (file) {
+                    this.fileLabel.classList.add('has-file');
+                    this.fileLabel.innerHTML = `
+                        <div>
+                            <i class="fas fa-file-check" style="font-size: 2rem; margin-bottom: 0.5rem; color: #059669;"></i>
+                            <div>File selected successfully</div>
+                            <small>Click to select a different file</small>
+                        </div>
+                    `;
+
+                    this.fileName.textContent = file.name;
+                    this.fileSize.textContent = this.formatFileSize(file.size);
+                    this.fileInfo.classList.add('show');
+                } else {
+                    this.resetFileDisplay();
+                }
+            }
+
+            resetFileDisplay() {
+                this.fileLabel.classList.remove('has-file');
+                this.fileLabel.innerHTML = `
+                    <div>
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                        <div>Click to select a file or drag and drop</div>
+                        <small>Supports PDF, Images, and Documents</small>
+                    </div>
+                `;
+                this.fileInfo.classList.remove('show');
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+            }
+
+            async handleSubmit(event) {
+                event.preventDefault();
+
+                this.hideAlerts();
+                this.setLoading(true);
+
+                try {
+                    const formData = new FormData(this.form);
+
+                    const response = await fetch('/api/v1/documents/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        this.showSuccess('Document uploaded successfully!', result);
+                        this.form.reset();
+                        this.resetFileDisplay();
+                    } else {
+                        const errorText = await this.getErrorMessage(response);
+                        this.showError(errorText);
+                    }
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    this.showError('Network error occurred. Please try again.');
+                } finally {
+                    this.setLoading(false);
+                }
+            }
+
+            async getErrorMessage(response) {
+                try {
+                    const errorData = await response.json();
+                    return errorData.message || `Upload failed (${response.status})`;
+                } catch {
+                    switch (response.status) {
+                        case 400:
+                            return 'Invalid request. Please check your input.';
+                        case 409:
+                            return 'Document already exists for this claim and type.';
+                        case 413:
+                            return 'File is too large.';
+                        case 415:
+                            return 'File type not supported.';
+                        default:
+                            return `Upload failed (${response.status}). Please try again.`;
+                    }
+                }
+            }
+
+            setLoading(loading) {
+                this.submitBtn.disabled = loading;
+                if (loading) {
+                    this.spinner.style.display = 'block';
+                    this.uploadIcon.style.display = 'none';
+                    this.buttonText.textContent = 'Uploading...';
+                } else {
+                    this.spinner.style.display = 'none';
+                    this.uploadIcon.style.display = 'block';
+                    this.buttonText.textContent = 'Upload Document';
+                }
+            }
+
+            showSuccess(message, documentData) {
+                this.successMessage.textContent = message;
+                this.successAlert.style.display = 'block';
+
+                // Show download section
+                if (documentData) {
+                    const claimNumber = encodeURIComponent(documentData.claimNumber);
+                    const documentType = encodeURIComponent(documentData.documentType);
+                    const downloadUrl = `/api/v1/documents/download?claimNumber=${claimNumber}&documentType=${documentType}`;
+
+                    this.downloadLink.href = downloadUrl;
+                    this.downloadLink.download = documentData.fileName || 'document';
+                    this.downloadSection.style.display = 'block';
+                }
+
+                // Scroll to success message
+                this.successAlert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            showError(message) {
+                this.errorMessage.textContent = message;
+                this.errorAlert.style.display = 'block';
+                this.downloadSection.style.display = 'none';
+
+                // Scroll to error message
+                this.errorAlert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            hideAlerts() {
+                this.successAlert.style.display = 'none';
+                this.errorAlert.style.display = 'none';
+                this.downloadSection.style.display = 'none';
+            }
+        }
+
+        // Initialize the uploader when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            new DocumentUploader();
+        });
+    </script>
+</body>
+</html>
