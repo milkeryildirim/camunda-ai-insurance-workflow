@@ -7,7 +7,6 @@ import static org.mockito.Mockito.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -17,11 +16,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
+import tech.yildirim.camunda.documentmanager.integration.CamundaIntegrationService;
 
 /**
  * Comprehensive test suite for DocumentService class. Tests all public methods including
@@ -35,22 +34,27 @@ class DocumentServiceTest {
 
   @Mock private DocumentMapper documentMapper;
 
-  @InjectMocks private DocumentService documentService;
+  @Mock private CamundaIntegrationService camundaIntegrationService;
+
+  private DocumentService documentService;
 
   private Document testDocument;
   private DocumentDTO testDocumentDTO;
   private MockMultipartFile testFile;
-  private final String CLAIM_NUMBER = "CLM-2023-001";
-  private final DocumentType DOCUMENT_TYPE = DocumentType.INVOICE;
+  private final String claimNumber = "CLM-2023-001";
+  private final DocumentType documentType = DocumentType.INVOICE;
 
   @BeforeEach
   void setUp() {
+    // Initialize DocumentService with all required dependencies
+    documentService = new DocumentService(documentRepository, documentMapper, camundaIntegrationService);
+
     // Setup test document entity
     testDocument =
         Document.builder()
             .id(1L)
-            .claimNumber(CLAIM_NUMBER)
-            .documentType(DOCUMENT_TYPE)
+            .claimNumber(claimNumber)
+            .documentType(documentType)
             .fileName("test-invoice.pdf")
             .fileContent("test content".getBytes())
             .contentType("application/pdf")
@@ -66,8 +70,8 @@ class DocumentServiceTest {
     testDocumentDTO =
         DocumentDTO.builder()
             .id(1L)
-            .claimNumber(CLAIM_NUMBER)
-            .documentType(DOCUMENT_TYPE)
+            .claimNumber(claimNumber)
+            .documentType(documentType)
             .fileName("test-invoice.pdf")
             .contentType("application/pdf")
             .fileSize(12L)
@@ -92,18 +96,17 @@ class DocumentServiceTest {
     @DisplayName("Should successfully find document by claim number and type")
     void shouldFindDocumentSuccessfully() {
       // Given
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.of(testDocument));
       when(documentMapper.toDTO(testDocument)).thenReturn(testDocumentDTO);
 
       // When
       Optional<DocumentDTO> result =
-          documentService.findDocumentByClaimAndType(CLAIM_NUMBER, DOCUMENT_TYPE);
+          documentService.findDocumentByClaimAndType(claimNumber, documentType);
 
       // Then
-      assertThat(result).isPresent();
-      assertThat(result).contains(testDocumentDTO);
-      verify(documentRepository).getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE);
+      assertThat(result).isPresent().contains(testDocumentDTO);
+      verify(documentRepository).getByClaimNumberAndDocumentType(claimNumber, documentType);
       verify(documentMapper).toDTO(testDocument);
     }
 
@@ -111,16 +114,16 @@ class DocumentServiceTest {
     @DisplayName("Should return empty when document not found")
     void shouldReturnEmptyWhenDocumentNotFound() {
       // Given
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.empty());
 
       // When
       Optional<DocumentDTO> result =
-          documentService.findDocumentByClaimAndType(CLAIM_NUMBER, DOCUMENT_TYPE);
+          documentService.findDocumentByClaimAndType(claimNumber, documentType);
 
       // Then
       assertThat(result).isEmpty();
-      verify(documentRepository).getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE);
+      verify(documentRepository).getByClaimNumberAndDocumentType(claimNumber, documentType);
       verifyNoInteractions(documentMapper);
     }
   }
@@ -133,12 +136,12 @@ class DocumentServiceTest {
     @DisplayName("Should successfully download file")
     void shouldDownloadFileSuccessfully() {
       // Given
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.of(testDocument));
 
       // When
       Optional<DocumentService.FileDownloadResult> result =
-          documentService.downloadFileByClaimAndType(CLAIM_NUMBER, DOCUMENT_TYPE);
+          documentService.downloadFileByClaimAndType(claimNumber, documentType);
 
       // Then
       assertThat(result).isPresent();
@@ -153,12 +156,12 @@ class DocumentServiceTest {
     @DisplayName("Should return empty when document not found")
     void shouldReturnEmptyWhenDocumentNotFound() {
       // Given
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.empty());
 
       // When
       Optional<DocumentService.FileDownloadResult> result =
-          documentService.downloadFileByClaimAndType(CLAIM_NUMBER, DOCUMENT_TYPE);
+          documentService.downloadFileByClaimAndType(claimNumber, documentType);
 
       // Then
       assertThat(result).isEmpty();
@@ -171,18 +174,18 @@ class DocumentServiceTest {
       Document documentWithoutContent =
           Document.builder()
               .id(1L)
-              .claimNumber(CLAIM_NUMBER)
-              .documentType(DOCUMENT_TYPE)
+              .claimNumber(claimNumber)
+              .documentType(documentType)
               .fileName("test-invoice.pdf")
               .fileContent(null)
               .build();
 
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.of(documentWithoutContent));
 
       // When
       Optional<DocumentService.FileDownloadResult> result =
-          documentService.downloadFileByClaimAndType(CLAIM_NUMBER, DOCUMENT_TYPE);
+          documentService.downloadFileByClaimAndType(claimNumber, documentType);
 
       // Then
       assertThat(result).isEmpty();
@@ -195,18 +198,18 @@ class DocumentServiceTest {
       Document documentWithEmptyContent =
           Document.builder()
               .id(1L)
-              .claimNumber(CLAIM_NUMBER)
-              .documentType(DOCUMENT_TYPE)
+              .claimNumber(claimNumber)
+              .documentType(documentType)
               .fileName("test-invoice.pdf")
               .fileContent(new byte[0])
               .build();
 
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.of(documentWithEmptyContent));
 
       // When
       Optional<DocumentService.FileDownloadResult> result =
-          documentService.downloadFileByClaimAndType(CLAIM_NUMBER, DOCUMENT_TYPE);
+          documentService.downloadFileByClaimAndType(claimNumber, documentType);
 
       // Then
       assertThat(result).isEmpty();
@@ -221,14 +224,17 @@ class DocumentServiceTest {
     @DisplayName("Should successfully create document")
     void shouldCreateDocumentSuccessfully() {
       // Given
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.empty());
       when(documentRepository.save(any(Document.class))).thenReturn(testDocument);
       when(documentMapper.toDTO(testDocument)).thenReturn(testDocumentDTO);
 
+      // Mock Camunda notification - should not throw exception
+      doNothing().when(camundaIntegrationService).notifyCustomerInvoiceReceived(anyString(), anyString());
+
       // When
       DocumentDTO result =
-          documentService.createDocument(CLAIM_NUMBER, DOCUMENT_TYPE, testFile, "test-user");
+          documentService.createDocument(claimNumber, documentType, testFile, "test-user");
 
       // Then
       assertThat(result).isEqualTo(testDocumentDTO);
@@ -237,17 +243,76 @@ class DocumentServiceTest {
       verify(documentRepository).save(documentCaptor.capture());
 
       Document savedDocument = documentCaptor.getValue();
-      assertThat(savedDocument.getClaimNumber()).isEqualTo(CLAIM_NUMBER);
-      assertThat(savedDocument.getDocumentType()).isEqualTo(DOCUMENT_TYPE);
+      assertThat(savedDocument.getClaimNumber()).isEqualTo(claimNumber);
+      assertThat(savedDocument.getDocumentType()).isEqualTo(documentType);
       assertThat(savedDocument.getFileName()).isEqualTo("test-invoice.pdf");
       assertThat(savedDocument.getUploadedBy()).isEqualTo("test-user");
+
+      // Verify Camunda notification was called for INVOICE document type
+      verify(camundaIntegrationService).notifyCustomerInvoiceReceived(
+          claimNumber,
+          "/api/v1/documents/download?claimNumber=" + claimNumber + "&documentType=" + documentType
+      );
+    }
+
+    @Test
+    @DisplayName("Should successfully create ADJUSTER_REPORT document and notify Camunda")
+    void shouldCreateAdjusterReportDocumentSuccessfully() {
+      // Given
+      DocumentType adjusterReportType = DocumentType.ADJUSTER_REPORT;
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, adjusterReportType))
+          .thenReturn(Optional.empty());
+      when(documentRepository.save(any(Document.class))).thenReturn(testDocument);
+      when(documentMapper.toDTO(testDocument)).thenReturn(testDocumentDTO);
+
+      // Mock Camunda notification for ADJUSTER_REPORT
+      doNothing().when(camundaIntegrationService).notifyAdjusterReportReceived(anyString(), anyString());
+
+      // When
+      DocumentDTO result =
+          documentService.createDocument(claimNumber, adjusterReportType, testFile, "test-user");
+
+      // Then
+      assertThat(result).isEqualTo(testDocumentDTO);
+
+      // Verify Camunda notification was called for ADJUSTER_REPORT document type
+      verify(camundaIntegrationService).notifyAdjusterReportReceived(
+          claimNumber,
+          "/api/v1/documents/download?claimNumber=" + claimNumber + "&documentType=" + adjusterReportType
+      );
+
+      // Verify customer invoice method was NOT called
+      verify(camundaIntegrationService, never()).notifyCustomerInvoiceReceived(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Should continue document creation even if Camunda notification fails")
+    void shouldContinueDocumentCreationEvenIfCamundaNotificationFails() {
+      // Given
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
+          .thenReturn(Optional.empty());
+      when(documentRepository.save(any(Document.class))).thenReturn(testDocument);
+      when(documentMapper.toDTO(testDocument)).thenReturn(testDocumentDTO);
+
+      // Mock Camunda notification to throw exception
+      doThrow(new RuntimeException("Camunda service unavailable"))
+          .when(camundaIntegrationService).notifyCustomerInvoiceReceived(anyString(), anyString());
+
+      // When & Then - should not throw exception, document creation should continue
+      DocumentDTO result =
+          documentService.createDocument(claimNumber, documentType, testFile, "test-user");
+
+      // Document should still be created successfully
+      assertThat(result).isEqualTo(testDocumentDTO);
+      verify(documentRepository).save(any(Document.class));
+      verify(camundaIntegrationService).notifyCustomerInvoiceReceived(anyString(), anyString());
     }
 
     @Test
     @DisplayName("Should throw exception when document already exists")
     void shouldThrowExceptionWhenDocumentAlreadyExists() {
       // Given
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.of(testDocument));
       when(documentMapper.toDTO(testDocument)).thenReturn(testDocumentDTO);
 
@@ -255,7 +320,7 @@ class DocumentServiceTest {
       assertThatThrownBy(
               () ->
                   documentService.createDocument(
-                      CLAIM_NUMBER, DOCUMENT_TYPE, testFile, "test-user"))
+                      claimNumber, documentType, testFile, "test-user"))
           .isInstanceOf(DocumentService.DocumentCreationException.class)
           .hasMessageContaining("Document already exists");
     }
@@ -265,7 +330,7 @@ class DocumentServiceTest {
     void shouldThrowExceptionWhenFileIsNull() {
       // When & Then
       assertThatThrownBy(
-              () -> documentService.createDocument(CLAIM_NUMBER, DOCUMENT_TYPE, null, "test-user"))
+              () -> documentService.createDocument(claimNumber, documentType, null, "test-user"))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("File cannot be null");
     }
@@ -281,7 +346,7 @@ class DocumentServiceTest {
       assertThatThrownBy(
               () ->
                   documentService.createDocument(
-                      CLAIM_NUMBER, DOCUMENT_TYPE, emptyFile, "test-user"))
+                      claimNumber, documentType, emptyFile, "test-user"))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("File cannot be empty");
     }
@@ -297,7 +362,7 @@ class DocumentServiceTest {
       assertThatThrownBy(
               () ->
                   documentService.createDocument(
-                      CLAIM_NUMBER, DOCUMENT_TYPE, fileWithoutName, "test-user"))
+                      claimNumber, documentType, fileWithoutName, "test-user"))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("File must have a valid filename");
     }
@@ -314,7 +379,7 @@ class DocumentServiceTest {
       assertThatThrownBy(
               () ->
                   documentService.createDocument(
-                      CLAIM_NUMBER, DOCUMENT_TYPE, largeFile, "test-user"))
+                      claimNumber, documentType, largeFile, "test-user"))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("File size")
           .hasMessageContaining("exceeds maximum allowed size");
@@ -332,7 +397,7 @@ class DocumentServiceTest {
       assertThatThrownBy(
               () ->
                   documentService.createDocument(
-                      CLAIM_NUMBER, DOCUMENT_TYPE, executableFile, "test-user"))
+                      claimNumber, documentType, executableFile, "test-user"))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("Unsupported file type");
     }
@@ -346,13 +411,16 @@ class DocumentServiceTest {
     @DisplayName("Should create document with default system user")
     void shouldCreateDocumentWithDefaultSystemUser() {
       // Given
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.empty());
       when(documentRepository.save(any(Document.class))).thenReturn(testDocument);
       when(documentMapper.toDTO(testDocument)).thenReturn(testDocumentDTO);
 
+      // Mock Camunda notification for INVOICE document type
+      doNothing().when(camundaIntegrationService).notifyCustomerInvoiceReceived(anyString(), anyString());
+
       // When
-      DocumentDTO result = documentService.createDocument(CLAIM_NUMBER, DOCUMENT_TYPE, testFile);
+      DocumentDTO result = documentService.createDocument(claimNumber, documentType, testFile);
 
       // Then
       assertThat(result).isEqualTo(testDocumentDTO);
@@ -362,6 +430,9 @@ class DocumentServiceTest {
 
       Document savedDocument = documentCaptor.getValue();
       assertThat(savedDocument.getUploadedBy()).isEqualTo("system");
+
+      // Verify Camunda notification was called
+      verify(camundaIntegrationService).notifyCustomerInvoiceReceived(anyString(), anyString());
     }
   }
 
@@ -373,19 +444,19 @@ class DocumentServiceTest {
     @DisplayName("Should find all documents by claim number")
     void shouldFindAllDocumentsByClaimNumber() {
       // Given
-      List<Document> documents = Arrays.asList(testDocument);
-      List<DocumentDTO> documentDTOs = Arrays.asList(testDocumentDTO);
+      List<Document> documents = List.of(testDocument);
+      List<DocumentDTO> documentDTOs = List.of(testDocumentDTO);
 
-      when(documentRepository.findByClaimNumber(CLAIM_NUMBER)).thenReturn(documents);
+      when(documentRepository.findByClaimNumber(claimNumber)).thenReturn(documents);
       when(documentMapper.toDTOList(documents)).thenReturn(documentDTOs);
 
       // When
-      List<DocumentDTO> result = documentService.findDocumentsByClaimNumber(CLAIM_NUMBER);
+      List<DocumentDTO> result = documentService.findDocumentsByClaimNumber(claimNumber);
 
       // Then
       assertThat(result).hasSize(1);
-      assertThat(result.get(0)).isEqualTo(testDocumentDTO);
-      verify(documentRepository).findByClaimNumber(CLAIM_NUMBER);
+      assertThat(result.getFirst()).isEqualTo(testDocumentDTO);
+      verify(documentRepository).findByClaimNumber(claimNumber);
       verify(documentMapper).toDTOList(documents);
     }
 
@@ -393,11 +464,11 @@ class DocumentServiceTest {
     @DisplayName("Should return empty list when no documents found")
     void shouldReturnEmptyListWhenNoDocumentsFound() {
       // Given
-      when(documentRepository.findByClaimNumber(CLAIM_NUMBER)).thenReturn(Arrays.asList());
-      when(documentMapper.toDTOList(any())).thenReturn(Arrays.asList());
+      when(documentRepository.findByClaimNumber(claimNumber)).thenReturn(List.of());
+      when(documentMapper.toDTOList(any())).thenReturn(List.of());
 
       // When
-      List<DocumentDTO> result = documentService.findDocumentsByClaimNumber(CLAIM_NUMBER);
+      List<DocumentDTO> result = documentService.findDocumentsByClaimNumber(claimNumber);
 
       // Then
       assertThat(result).isEmpty();
@@ -412,21 +483,21 @@ class DocumentServiceTest {
     @DisplayName("Should find active documents by claim and type")
     void shouldFindActiveDocumentsByClaimAndType() {
       // Given
-      List<Document> documents = Arrays.asList(testDocument);
-      List<DocumentDTO> documentDTOs = Arrays.asList(testDocumentDTO);
+      List<Document> documents = List.of(testDocument);
+      List<DocumentDTO> documentDTOs = List.of(testDocumentDTO);
 
-      when(documentRepository.findActiveDocumentsByClaimAndType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.findActiveDocumentsByClaimAndType(claimNumber, documentType))
           .thenReturn(documents);
       when(documentMapper.toDTOList(documents)).thenReturn(documentDTOs);
 
       // When
       List<DocumentDTO> result =
-          documentService.findActiveDocumentsByClaimAndType(CLAIM_NUMBER, DOCUMENT_TYPE);
+          documentService.findActiveDocumentsByClaimAndType(claimNumber, documentType);
 
       // Then
       assertThat(result).hasSize(1);
-      assertThat(result.get(0)).isEqualTo(testDocumentDTO);
-      verify(documentRepository).findActiveDocumentsByClaimAndType(CLAIM_NUMBER, DOCUMENT_TYPE);
+      assertThat(result.getFirst()).isEqualTo(testDocumentDTO);
+      verify(documentRepository).findActiveDocumentsByClaimAndType(claimNumber, documentType);
       verify(documentMapper).toDTOList(documents);
     }
   }
@@ -442,19 +513,22 @@ class DocumentServiceTest {
       String base64Content = Base64.getEncoder().encodeToString("test content".getBytes());
       DocumentDTO inputDTO =
           DocumentDTO.builder()
-              .claimNumber(CLAIM_NUMBER)
-              .documentType(DOCUMENT_TYPE)
+              .claimNumber(claimNumber)
+              .documentType(documentType)
               .fileName("test-invoice.pdf")
               .fileContent(base64Content)
               .contentType("application/pdf")
               .uploadedBy("test-user")
               .build();
 
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.empty());
       when(documentMapper.toEntity(inputDTO)).thenReturn(testDocument);
       when(documentRepository.save(any(Document.class))).thenReturn(testDocument);
       when(documentMapper.toDTO(testDocument)).thenReturn(testDocumentDTO);
+
+      // Mock Camunda notification for INVOICE document type
+      doNothing().when(camundaIntegrationService).notifyCustomerInvoiceReceived(anyString(), anyString());
 
       // When
       DocumentDTO result = documentService.createDocumentFromDTO(inputDTO);
@@ -464,6 +538,12 @@ class DocumentServiceTest {
       verify(documentRepository).save(any(Document.class));
       verify(documentMapper).toEntity(inputDTO);
       verify(documentMapper).toDTO(testDocument);
+
+      // Verify Camunda notification was called
+      verify(camundaIntegrationService).notifyCustomerInvoiceReceived(
+          claimNumber,
+          "/api/v1/documents/download?claimNumber=" + claimNumber + "&documentType=" + documentType
+      );
     }
 
     @Test
@@ -472,12 +552,12 @@ class DocumentServiceTest {
       // Given
       DocumentDTO inputDTO =
           DocumentDTO.builder()
-              .claimNumber(CLAIM_NUMBER)
-              .documentType(DOCUMENT_TYPE)
+              .claimNumber(claimNumber)
+              .documentType(documentType)
               .fileName("test-invoice.pdf")
               .build();
 
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.of(testDocument));
       when(documentMapper.toDTO(testDocument)).thenReturn(testDocumentDTO);
 
@@ -493,26 +573,29 @@ class DocumentServiceTest {
       // Given
       DocumentDTO inputDTO =
           DocumentDTO.builder()
-              .claimNumber(CLAIM_NUMBER)
-              .documentType(DOCUMENT_TYPE)
+              .claimNumber(claimNumber)
+              .documentType(documentType)
               .fileName("test-invoice.pdf")
               .fileContent(Base64.getEncoder().encodeToString("test content".getBytes()))
               .build();
 
       Document documentWithoutUploadedBy =
           Document.builder()
-              .claimNumber(CLAIM_NUMBER)
-              .documentType(DOCUMENT_TYPE)
+              .claimNumber(claimNumber)
+              .documentType(documentType)
               .fileName("test-invoice.pdf")
               .fileContent("test content".getBytes())
               .uploadedBy(null) // Will be set to "system"
               .build();
 
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.empty());
       when(documentMapper.toEntity(inputDTO)).thenReturn(documentWithoutUploadedBy);
       when(documentRepository.save(any(Document.class))).thenReturn(testDocument);
       when(documentMapper.toDTO(testDocument)).thenReturn(testDocumentDTO);
+
+      // Mock Camunda notification for INVOICE document type
+      doNothing().when(camundaIntegrationService).notifyCustomerInvoiceReceived(anyString(), anyString());
 
       // When
       documentService.createDocumentFromDTO(inputDTO);
@@ -523,6 +606,9 @@ class DocumentServiceTest {
 
       Document savedDocument = documentCaptor.getValue();
       assertThat(savedDocument.getUploadedBy()).isEqualTo("system");
+
+      // Verify Camunda notification was called
+      verify(camundaIntegrationService).notifyCustomerInvoiceReceived(anyString(), anyString());
     }
   }
 
@@ -549,11 +635,11 @@ class DocumentServiceTest {
     void shouldHandleLongClaimNumberValidation() {
       // In real scenario, Spring would throw ConstraintViolationException
       // Here we verify the business logic works correctly with valid inputs
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.empty());
 
       Optional<DocumentDTO> result =
-          documentService.findDocumentByClaimAndType(CLAIM_NUMBER, DOCUMENT_TYPE);
+          documentService.findDocumentByClaimAndType(claimNumber, documentType);
       assertThat(result).isEmpty();
     }
 
@@ -561,13 +647,14 @@ class DocumentServiceTest {
     @DisplayName("Should handle null document type validation")
     void shouldHandleNullDocumentTypeValidation() {
       // Jakarta Validation would handle @NotNull in actual runtime
-      // Here we test that the service method works with valid inputs
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
-          .thenReturn(Optional.empty());
+      // Here we test that the service method works correctly with different scenarios
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
+          .thenReturn(Optional.of(testDocument));
+      when(documentMapper.toDTO(testDocument)).thenReturn(testDocumentDTO);
 
       Optional<DocumentDTO> result =
-          documentService.findDocumentByClaimAndType(CLAIM_NUMBER, DOCUMENT_TYPE);
-      assertThat(result).isEmpty();
+          documentService.findDocumentByClaimAndType(claimNumber, documentType);
+      assertThat(result).isPresent().contains(testDocumentDTO);
     }
   }
 
@@ -579,12 +666,12 @@ class DocumentServiceTest {
     @DisplayName("Should handle repository exceptions gracefully")
     void shouldHandleRepositoryExceptionsGracefully() {
       // Given
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenThrow(new RuntimeException("Database connection failed"));
 
       // When & Then
       assertThatThrownBy(
-              () -> documentService.findDocumentByClaimAndType(CLAIM_NUMBER, DOCUMENT_TYPE))
+              () -> documentService.findDocumentByClaimAndType(claimNumber, documentType))
           .isInstanceOf(RuntimeException.class)
           .hasMessageContaining("Database connection failed");
     }
@@ -593,7 +680,7 @@ class DocumentServiceTest {
     @DisplayName("Should handle mapper exceptions in createDocument")
     void shouldHandleMapperExceptionsInCreateDocument() {
       // Given
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.empty());
       when(documentRepository.save(any(Document.class))).thenReturn(testDocument);
       when(documentMapper.toDTO(testDocument)).thenThrow(new RuntimeException("Mapping failed"));
@@ -602,7 +689,7 @@ class DocumentServiceTest {
       assertThatThrownBy(
               () ->
                   documentService.createDocument(
-                      CLAIM_NUMBER, DOCUMENT_TYPE, testFile, "test-user"))
+                      claimNumber, documentType, testFile, "test-user"))
           .isInstanceOf(DocumentService.DocumentCreationException.class)
           .hasMessageContaining("Failed to create document");
     }
@@ -618,14 +705,14 @@ class DocumentServiceTest {
       when(problematicFile.getSize()).thenReturn(1000L);
       when(problematicFile.getBytes()).thenThrow(new IOException("Failed to read file"));
 
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.empty());
 
       // When & Then
       assertThatThrownBy(
               () ->
                   documentService.createDocument(
-                      CLAIM_NUMBER, DOCUMENT_TYPE, problematicFile, "test-user"))
+                      claimNumber, documentType, problematicFile, "test-user"))
           .isInstanceOf(DocumentService.DocumentCreationException.class)
           .hasMessageContaining("Failed to read file content");
     }
@@ -642,15 +729,18 @@ class DocumentServiceTest {
       MockMultipartFile pdfFile =
           new MockMultipartFile("file", "test.pdf", "application/pdf", "content".getBytes());
 
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.empty());
       when(documentRepository.save(any(Document.class))).thenReturn(testDocument);
       when(documentMapper.toDTO(testDocument)).thenReturn(testDocumentDTO);
 
+      // Mock Camunda notification
+      doNothing().when(camundaIntegrationService).notifyCustomerInvoiceReceived(anyString(), anyString());
+
       // When & Then
       assertThatCode(
               () ->
-                  documentService.createDocument(CLAIM_NUMBER, DOCUMENT_TYPE, pdfFile, "test-user"))
+                  documentService.createDocument(claimNumber, documentType, pdfFile, "test-user"))
           .doesNotThrowAnyException();
     }
 
@@ -661,16 +751,19 @@ class DocumentServiceTest {
       MockMultipartFile imageFile =
           new MockMultipartFile("file", "test.jpg", "image/jpeg", "content".getBytes());
 
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.empty());
       when(documentRepository.save(any(Document.class))).thenReturn(testDocument);
       when(documentMapper.toDTO(testDocument)).thenReturn(testDocumentDTO);
+
+      // Mock Camunda notification
+      doNothing().when(camundaIntegrationService).notifyCustomerInvoiceReceived(anyString(), anyString());
 
       // When & Then
       assertThatCode(
               () ->
                   documentService.createDocument(
-                      CLAIM_NUMBER, DOCUMENT_TYPE, imageFile, "test-user"))
+                      claimNumber, documentType, imageFile, "test-user"))
           .doesNotThrowAnyException();
     }
 
@@ -681,16 +774,19 @@ class DocumentServiceTest {
       MockMultipartFile fileWithoutContentType =
           new MockMultipartFile("file", "test.txt", null, "content".getBytes());
 
-      when(documentRepository.getByClaimNumberAndDocumentType(CLAIM_NUMBER, DOCUMENT_TYPE))
+      when(documentRepository.getByClaimNumberAndDocumentType(claimNumber, documentType))
           .thenReturn(Optional.empty());
       when(documentRepository.save(any(Document.class))).thenReturn(testDocument);
       when(documentMapper.toDTO(testDocument)).thenReturn(testDocumentDTO);
+
+      // Mock Camunda notification
+      doNothing().when(camundaIntegrationService).notifyCustomerInvoiceReceived(anyString(), anyString());
 
       // When & Then
       assertThatCode(
               () ->
                   documentService.createDocument(
-                      CLAIM_NUMBER, DOCUMENT_TYPE, fileWithoutContentType, "test-user"))
+                      claimNumber, documentType, fileWithoutContentType, "test-user"))
           .doesNotThrowAnyException();
     }
 
@@ -717,7 +813,7 @@ class DocumentServiceTest {
         assertThatThrownBy(
                 () ->
                     documentService.createDocument(
-                        CLAIM_NUMBER, DOCUMENT_TYPE, executableFile, "test-user"))
+                        claimNumber, documentType, executableFile, "test-user"))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Unsupported file type");
       }

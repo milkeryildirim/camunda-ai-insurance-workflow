@@ -16,10 +16,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.multipart.MultipartFile;
+import tech.yildirim.camunda.documentmanager.integration.CamundaIntegrationService;
 
 /**
  * Service class for document management operations. Handles document storage, retrieval, and file
  * operations for insurance claims.
+ * <p>
+ * This service integrates with Camunda BPM workflow engine to notify about document upload events
+ * for adjuster reports and customer invoices.
+ * </p>
  */
 @Service
 @Validated
@@ -29,6 +34,7 @@ public class DocumentService {
 
   private final DocumentRepository documentRepository;
   private final DocumentMapper documentMapper;
+  private final CamundaIntegrationService camundaIntegrationService;
 
   /**
    * Finds a document by claim number and document type and returns as DTO.
@@ -179,7 +185,13 @@ public class DocumentService {
           savedDocument.getFileName(),
           savedDocument.getFileSize());
 
-      return documentMapper.toDTO(savedDocument);
+      // Convert to DTO
+      DocumentDTO resultDTO = documentMapper.toDTO(savedDocument);
+
+      // Notify Camunda about document upload
+      notifyCamundaAboutDocumentUpload(claimNumber, documentType);
+
+      return resultDTO;
 
     } catch (IOException e) {
       log.error(
@@ -328,6 +340,56 @@ public class DocumentService {
   // ========================== PRIVATE HELPER METHODS ==========================
 
   /**
+   * Notifies Camunda BPM workflow about document upload.
+   * <p>
+   * This method determines the document type and calls the appropriate CamundaIntegrationService
+   * method to notify the workflow engine about the document upload event.
+   * </p>
+   *
+   * @param claimNumber The claim number for the uploaded document
+   * @param documentType The type of document uploaded (ADJUSTER_REPORT or INVOICE)
+   */
+  private void notifyCamundaAboutDocumentUpload(String claimNumber, DocumentType documentType) {
+    try {
+      // Construct download URL for the document
+      String documentDownloadUrl = String.format(
+          "/api/v1/documents/download?claimNumber=%s&documentType=%s",
+          claimNumber,
+          documentType
+      );
+
+      log.debug("Notifying Camunda about {} upload for claim: {}", documentType, claimNumber);
+
+      // Route to appropriate Camunda notification based on document type
+      switch (documentType) {
+        case ADJUSTER_REPORT -> {
+          log.info("Notifying Camunda about adjuster report upload for claim: {}", claimNumber);
+          camundaIntegrationService.notifyAdjusterReportReceived(claimNumber, documentDownloadUrl);
+        }
+        case INVOICE -> {
+          log.info("Notifying Camunda about customer invoice upload for claim: {}", claimNumber);
+          camundaIntegrationService.notifyCustomerInvoiceReceived(claimNumber, documentDownloadUrl);
+        }
+        default ->
+          log.warn("Unsupported document type for Camunda notification: {} for claim: {}",
+                   documentType, claimNumber);
+        // We don't throw exception here to avoid breaking document upload for unsupported types
+      }
+
+      log.info("Successfully notified Camunda about {} upload for claim: {}", documentType, claimNumber);
+
+    } catch (Exception e) {
+      // Log error but don't fail document creation
+      // Camunda notification failure should not prevent document upload
+      log.error("Failed to notify Camunda about {} upload for claim: {} - Error: {}",
+                documentType, claimNumber, e.getMessage(), e);
+
+      // Note: We could implement a retry mechanism or dead letter queue here
+      // For now, we just log the error and continue
+    }
+  }
+
+  /**
    * Internal method to find document entity by claim number and document type. Used only for
    * internal operations where entity access is required.
    *
@@ -395,7 +457,13 @@ public class DocumentService {
           documentDTO.getClaimNumber(),
           documentDTO.getDocumentType());
 
-      return documentMapper.toDTO(savedDocument);
+      // Convert to DTO
+      DocumentDTO resultDTO = documentMapper.toDTO(savedDocument);
+
+      // Notify Camunda about document upload
+      notifyCamundaAboutDocumentUpload(documentDTO.getClaimNumber(), documentDTO.getDocumentType());
+
+      return resultDTO;
 
     } catch (Exception e) {
       log.error(
